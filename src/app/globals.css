@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+@theme {
+  /* --- Surfaces --- */
+  --color-background: #070b14;
+  --color-surface: #0d1321;
+  --color-card: #111827;
+  --color-line: #1f2937;
+
+  /* --- Brand / AI --- */
+  --color-primary: #4f8cff;
+  --color-ai: #7c6cff;
+  --color-cyan: #36d9d0;
+
+  /* --- Status --- */
+  --color-success: #49d17d;
+  --color-warning: #f4b860;
+  --color-danger: #f05252;
+
+  /* --- Text --- */
+  --color-fg: #f8fafc;
+  --color-muted: #94a3b8;
+
+  /* --- Typography --- */
+  --font-sans: var(--font-paperlogy), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  /* --- Motion --- */
+  --animate-pulse-soft: pulse-soft 2.4s ease-in-out infinite;
+  --animate-scan: scan 3.2s linear infinite;
+  --animate-rise: rise 0.35s ease-out both;
+  --animate-slide-in: slide-in-right 0.25s ease-out both;
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(400%);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Status colors consumed by the Digital Twin SVG via CSS variables, so the
+   map never hard-codes a hex value of its own. */
+:root {
+  --status-normal: var(--color-success);
+  --status-caution: var(--color-warning);
+  --status-critical: var(--color-danger);
+  color-scheme: dark;
+}
+
+* {
+  border-color: var(--color-line);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numbers, clocks and status codes stay on the mono grid. */
+.tnum {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+::selection {
+  background-color: color-mix(in oklab, var(--color-primary) 40%, transparent);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Thin scrollbars to keep the command-center feel. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border: 3px solid var(--color-background);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
