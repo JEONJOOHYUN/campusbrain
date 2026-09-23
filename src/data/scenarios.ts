@@ -19,6 +19,7 @@ const NORMAL: ScenarioDefinition = {
   timeScale: 10,
   clockStart: "14:30",
   focusBuildingId: null,
+  flowFromBuildingId: null,
   insight: null,
   available: true,
   keyframes: [
@@ -116,6 +117,7 @@ const CROWD: ScenarioDefinition = {
   timeScale: 10,
   clockStart: "14:30",
   focusBuildingId: "engineering",
+  flowFromBuildingId: "main",
   available: true,
   insight: {
     id: "insight-crowd-engineering",
@@ -240,6 +242,16 @@ const CROWD: ScenarioDefinition = {
         label: "우회 경로 사이니지",
         detail: "서편 복도 · 디스플레이 4대 변경",
       },
+      signage: {
+        ids: ["SGN-03", "SGN-04", "SGN-07"],
+        message: {
+          kind: "wayfinding",
+          headline: "공학관 1층 혼잡",
+          sub: "서편 복도로 우회하세요",
+          arrow: "left",
+        },
+        reason: "공학관 10분 후 91% 혼잡 예측에 따른 우회 안내",
+      },
       log: {
         category: "signage",
         stage: "act",
@@ -247,6 +259,21 @@ const CROWD: ScenarioDefinition = {
         title: "우회 경로 사이니지 활성화",
         location: "공학관 1층 · 서편 복도",
         target: "디스플레이 4대",
+      },
+    },
+    {
+      // The receiving end of the diversion gets its own wording — the same
+      // AI decision, but a display standing at the corridor it opens.
+      t: 21,
+      signage: {
+        ids: ["SGN-05"],
+        message: {
+          kind: "wayfinding",
+          headline: "서편 복도 개방",
+          sub: "3층 강의동 방면 우회로",
+          arrow: "up",
+        },
+        reason: "공학관 10분 후 91% 혼잡 예측에 따른 우회 안내",
       },
     },
     {
@@ -261,6 +288,15 @@ const CROWD: ScenarioDefinition = {
         buildingId: "engineering",
         label: "엘리베이터 분산",
         detail: "2·3호기 5~9층 전용 운행",
+      },
+      signage: {
+        ids: ["SGN-06"],
+        message: {
+          kind: "alert",
+          headline: "엘리베이터 분산 운행",
+          sub: "2·3호기 5~9층 전용 · 1·4호기 저층",
+        },
+        reason: "공학관 저층 혼잡 완화를 위한 엘리베이터 분산 결정",
       },
       log: {
         category: "crowd",
@@ -343,6 +379,7 @@ const EVENT: ScenarioDefinition = {
   timeScale: 10,
   clockStart: "14:30",
   focusBuildingId: null,
+  flowFromBuildingId: null,
   insight: null,
   keyframes: [],
   available: false,
@@ -357,6 +394,7 @@ const EMERGENCY: ScenarioDefinition = {
   timeScale: 10,
   clockStart: "14:30",
   focusBuildingId: null,
+  flowFromBuildingId: null,
   insight: null,
   keyframes: [],
   available: false,

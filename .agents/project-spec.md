@@ -290,7 +290,15 @@ shadcn/ui는 필요한 것만 쓴다. 후보: Button, Card, Badge, Tabs, Tooltip
 
 # 데이터 구조
 
-모든 시뮬레이션 데이터는 `src/data/`에서만 관리한다: campus.ts, buildings.ts, robots.ts, signage.ts, scenarios.ts, activity.ts
+모든 시뮬레이션 데이터는 `src/data/`에서만 관리한다: campus.ts, buildings.ts, robots.ts, signage.ts, scenarios.ts, activity.ts, energy.ts
+
+> 구현 결정 (세션 2): 명세에 없던 `energy.ts`를 추가했다. 건물별 정격 전력(kW), 시스템별 비중,
+> AI 자동제어 이벤트 기록을 담는다. 에너지 페이지의 수치는 `정격 kW x 엔진이 만든 energy%`로
+> 파생되므로 다른 화면과 같은 시뮬레이션에서 움직인다.
+>
+> `activity.ts`는 "오늘 그 전에 AI가 한 일" 정적 아카이브다(08:05~14:22, 23건). 라이브 로그는
+> 여전히 시나리오 타임라인에서 나오고, 아카이브는 AI 리포트의 전체 타임라인에만 덧붙는다.
+> 평상시 운영 중 일어난 일이므로 scenario는 "normal"로 단다.
 
 ```ts
 type SimulationScenario = "normal" | "crowd" | "event" | "emergency";

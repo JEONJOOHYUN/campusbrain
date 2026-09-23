@@ -57,6 +57,11 @@ export interface BuildingState extends BuildingBase, BuildingMetrics {
   population: number;
   status: BuildingStatus;
   crowdLevel: CrowdLevel;
+  /**
+   * Crowd change over the trend lookback window, in percentage points.
+   * Positive means filling up. Zero at the start of a run.
+   */
+  crowdTrend: number;
   /** Crowd forecast from the active AI insight, or null when none applies. */
   prediction: number | null;
   /** Minutes ahead the prediction looks. */
@@ -84,6 +89,45 @@ export interface RobotBase {
 export interface RobotState extends RobotBase {
   /** True while the active scenario has re-tasked this robot. */
   retasked: boolean;
+}
+
+/* --- Signage ------------------------------------------------------ */
+
+export type SignageKind =
+  | "welcome"
+  | "event"
+  | "wayfinding"
+  | "alert"
+  | "evacuation";
+
+/** What a display is showing. The UI renders this as the sign itself. */
+export interface SignageMessage {
+  kind: SignageKind;
+  headline: string;
+  sub?: string;
+  /** Direction arrow drawn beside the text, for wayfinding messages. */
+  arrow?: "left" | "right" | "up" | "down";
+}
+
+export interface SignageBase {
+  id: string;
+  name: string;
+  buildingId: BuildingId;
+  location: string;
+  /** Offline displays keep their last message and are shown dimmed. */
+  online: boolean;
+  /** What the display shows until the AI overrides it. */
+  baseMessage: SignageMessage;
+}
+
+export interface SignageState extends SignageBase {
+  message: SignageMessage;
+  /** True while the AI is showing something other than `baseMessage`. */
+  overridden: boolean;
+  /** Simulated clock of the override, e.g. "14:33". Null while baseline. */
+  changedAt: string | null;
+  /** Which AI decision caused the change. Null while baseline. */
+  changeReason: string | null;
 }
 
 /* --- AI insight --------------------------------------------------- */
@@ -201,6 +245,13 @@ export interface ScenarioKeyframe {
   action?: AiActionBlueprint;
   /** A robot re-tasking that takes effect at this moment. */
   robot?: { id: string } & Partial<Pick<RobotBase, "task" | "location" | "status">>;
+  /** A signage push that takes effect at this moment. */
+  signage?: {
+    ids: string[];
+    message: SignageMessage;
+    /** Why the AI changed it — shown next to the change time. */
+    reason: string;
+  };
   /** An activity log entry emitted at this moment. */
   log?: Omit<ActivityLogEntry, "id" | "time" | "scenario">;
 }
@@ -217,6 +268,11 @@ export interface ScenarioDefinition {
   /** Simulated wall clock at t=0, "HH:MM". */
   clockStart: string;
   focusBuildingId: BuildingId | null;
+  /**
+   * Where the inbound crowd is coming from, drawn on the Digital Twin as a
+   * flow arrow towards the insight's building. Null draws no flow.
+   */
+  flowFromBuildingId: BuildingId | null;
   insight: AiInsightBlueprint | null;
   keyframes: ScenarioKeyframe[];
   /** False while the scenario is still a stub. */
@@ -236,6 +292,7 @@ export interface SimulationState {
   clock: string;
   buildings: BuildingState[];
   robots: RobotState[];
+  signage: SignageState[];
   campus: CampusKpi;
   insight: AiInsight | null;
   actions: AiAction[];

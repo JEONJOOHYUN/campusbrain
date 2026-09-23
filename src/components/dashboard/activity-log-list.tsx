@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { IconArrowRight } from "@/components/icons";
+import { IconArrowRight, IconReports } from "@/components/icons";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   CATEGORY_LABEL,
   STAGE_LABEL,
@@ -37,7 +38,11 @@ export function RecentActivityCard({
       </CardHeader>
       <CardContent className="flex-1">
         {entries.length === 0 ? (
-          <p className="text-sm text-muted">아직 기록된 AI 활동이 없습니다.</p>
+          <EmptyState
+            icon={<IconReports width={18} height={18} />}
+            title="아직 기록된 AI 활동이 없습니다"
+            description="시뮬레이션을 재생하면 AI의 관측·예측·판단·실행이 순서대로 쌓입니다."
+          />
         ) : (
           <ol className="space-y-0">
             {entries.map((entry, index) => (

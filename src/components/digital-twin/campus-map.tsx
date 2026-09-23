@@ -38,6 +38,20 @@ function rightFace({ x, y, w, d, h }: BuildingShape): string {
   ].join(" ");
 }
 
+/**
+ * Inbound crowd arrow: leaves the source's front corner, bows out towards the
+ * viewer, and lands on the target's near-left face.
+ */
+function flowPath(from: BuildingShape, to: BuildingShape): string {
+  const sx = from.x;
+  const sy = from.y + from.d;
+  const tx = to.x - to.w;
+  const ty = to.y;
+  const cx = (sx + tx) / 2 - 20;
+  const cy = (sy + ty) / 2 + 48;
+  return `M ${sx} ${sy} Q ${cx} ${cy} ${tx} ${ty}`;
+}
+
 /** Ground grid, drawn in the same isometric direction as the buildings. */
 function GroundGrid({ opacity = 0.28 }: { opacity?: number }) {
   const lines: React.ReactElement[] = [];
@@ -89,7 +103,9 @@ export function CampusMap({ className }: CampusMapProps) {
   const ordered = [...state.buildings].sort((a, b) => a.shape.y - b.shape.y);
 
   const focusId = state.insight?.buildingId ?? null;
-  const flowSource = focusId ? state.buildings.find((b) => b.id === "main") : null;
+  const flowFromId = state.definition.flowFromBuildingId;
+  const flowSource =
+    focusId && flowFromId ? state.buildings.find((b) => b.id === flowFromId) : null;
   const flowTarget = focusId ? state.buildings.find((b) => b.id === focusId) : null;
 
   return (
@@ -150,8 +166,7 @@ export function CampusMap({ className }: CampusMapProps) {
         {flowSource && flowTarget && (
           <g>
             <path
-              d={`M ${flowSource.shape.x} ${flowSource.shape.y + flowSource.shape.d}
-                  Q 430 320 ${flowTarget.shape.x - flowTarget.shape.w} ${flowTarget.shape.y}`}
+              d={flowPath(flowSource.shape, flowTarget.shape)}
               fill="none"
               stroke="var(--color-warning)"
               strokeWidth={2.5}

@@ -27,3 +27,10 @@ export const CROWD_THRESHOLDS = {
  * busy building is normal for a campus at 14:30.
  */
 export const CAMPUS_CAUTION_BUILDING_COUNT = 3;
+
+/**
+ * How far back a crowd trend looks, in *simulated* minutes. The engine
+ * converts it with the scenario's timeScale, so the arrow always means the
+ * same thing on the wall clock no matter how fast playback runs.
+ */
+export const CROWD_TREND_LOOKBACK_MIN = 2;

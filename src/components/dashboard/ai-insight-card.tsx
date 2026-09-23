@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge, SimulatedTag } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { IconBrain, IconCheck } from "@/components/icons";
 import { STAGE_LABEL, severityTone } from "@/components/dashboard/status";
 import { useSimulation } from "@/components/simulation/simulation-provider";
@@ -10,15 +11,24 @@ import { cn } from "@/lib/utils";
 
 export function AiInsightCard({ className }: { className?: string }) {
   const { state } = useSimulation();
-  return <AiInsightBody insight={state.insight} className={className} />;
+  return (
+    <AiInsightBody
+      insight={state.insight}
+      watchedCount={state.buildings.length}
+      className={className}
+    />
+  );
 }
 
 export function AiInsightBody({
   insight,
+  watchedCount,
   className,
   compact = false,
 }: {
   insight: AiInsight | null;
+  /** How many buildings the AI is watching, for the idle message. */
+  watchedCount?: number;
   className?: string;
   compact?: boolean;
 }) {
@@ -31,10 +41,16 @@ export function AiInsightBody({
             AI 인사이트
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted">
-            현재 주의가 필요한 예측이 없습니다. AI가 6개 건물을 계속 관측하고 있습니다.
-          </p>
+        <CardContent className="pt-2">
+          <EmptyState
+            icon={<IconBrain width={18} height={18} />}
+            title="현재 주의가 필요한 예측이 없습니다"
+            description={
+              watchedCount === undefined
+                ? undefined
+                : `AI가 ${watchedCount}개 건물을 계속 관측하고 있습니다.`
+            }
+          />
         </CardContent>
       </Card>
     );

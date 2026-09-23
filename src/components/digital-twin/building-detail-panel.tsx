@@ -12,9 +12,11 @@ import {
 } from "@/components/dashboard/status";
 import { Badge, SimulatedTag } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Progress } from "@/components/ui/progress";
 import {
   IconAir,
+  IconBrain,
   IconCheck,
   IconClose,
   IconElevator,
@@ -239,8 +241,13 @@ export function BuildingDetailPanel() {
                 </li>
               ))}
               {building.robots.length === 0 && (
-                <li className="rounded-lg border border-line bg-card/60 px-3 py-3 text-xs text-muted">
-                  이 건물에 배치된 로봇이 없습니다.
+                <li>
+                  <EmptyState
+                    size="sm"
+                    icon={<IconRobot width={15} height={15} />}
+                    title="이 건물에 배치된 로봇이 없습니다"
+                    description="인근 건물의 로봇이 필요 시 재배치됩니다."
+                  />
                 </li>
               )}
             </ul>
@@ -269,10 +276,16 @@ export function BuildingDetailPanel() {
             {insight ? (
               <AiInsightBody insight={insight} />
             ) : (
-              <p className="rounded-lg border border-line bg-card/60 px-3 py-3 text-xs leading-relaxed text-muted">
-                현재 이 건물에 대한 예측 경보가 없습니다.
-                {canSimulateCrowd && " 아래에서 혼잡 시나리오를 실행해 보세요."}
-              </p>
+              <EmptyState
+                size="sm"
+                icon={<IconBrain width={15} height={15} />}
+                title="현재 이 건물에 대한 예측 경보가 없습니다"
+                description={
+                  canSimulateCrowd
+                    ? "아래에서 혼잡 시나리오를 실행해 보세요."
+                    : undefined
+                }
+              />
             )}
           </section>
 

@@ -17,6 +17,7 @@ Physical AI 스마트 캠퍼스 인터랙티브 프로토타입.
 - 폰트: Paperlogy(`--font-sans`) + Geist Mono(`--font-mono`).
   숫자·시각·상태값에는 `.tnum` 클래스를 붙인다.
 - 색은 `globals.css`의 CSS 변수와 Tailwind 토큰만 쓴다. 컴포넌트에 hex를 적지 않는다.
+- 빈 상태는 `EmptyState`, 로딩 자리는 `Skeleton`을 쓴다. 새로 만들지 않는다.
 - 사용자 허락 없이 commit / push 하지 않는다. Conventional Commits 형식.
 
 ## 화면 언어

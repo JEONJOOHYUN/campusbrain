@@ -1,5 +1,7 @@
 import { BASELINE_METRICS, BUILDINGS } from "@/data/buildings";
+import { CROWD_TREND_LOOKBACK_MIN } from "@/data/campus";
 import { ROBOTS } from "@/data/robots";
+import { SIGNAGE } from "@/data/signage";
 import { SCENARIOS } from "@/data/scenarios";
 import type {
   ActivityLogEntry,
@@ -12,6 +14,8 @@ import type {
   RobotBase,
   RobotState,
   ScenarioDefinition,
+  ScenarioKeyframe,
+  SignageState,
   SimulationScenario,
   SimulationState,
 } from "@/types";
@@ -43,11 +47,17 @@ interface TimedRobotPatch {
   patch: { id: string } & Partial<Pick<RobotBase, "task" | "location" | "status">>;
 }
 
+interface TimedSignagePatch {
+  t: number;
+  patch: NonNullable<ScenarioKeyframe["signage"]>;
+}
+
 interface CompiledScenario {
   tracks: Map<string, TrackPoint[]>;
   logs: TimedLog[];
   actions: TimedAction[];
   robotPatches: TimedRobotPatch[];
+  signagePatches: TimedSignagePatch[];
 }
 
 const cache = new WeakMap<ScenarioDefinition, CompiledScenario>();
@@ -65,6 +75,7 @@ function compile(def: ScenarioDefinition): CompiledScenario {
   const logs: TimedLog[] = [];
   const actions: TimedAction[] = [];
   const robotPatches: TimedRobotPatch[] = [];
+  const signagePatches: TimedSignagePatch[] = [];
 
   const frames = [...def.keyframes].sort((a, b) => a.t - b.t);
 
@@ -85,6 +96,7 @@ function compile(def: ScenarioDefinition): CompiledScenario {
     if (frame.log) logs.push({ t: frame.t, entry: frame.log });
     if (frame.action) actions.push({ t: frame.t, blueprint: frame.action });
     if (frame.robot) robotPatches.push({ t: frame.t, patch: frame.robot });
+    if (frame.signage) signagePatches.push({ t: frame.t, patch: frame.signage });
   }
 
   // A track whose first keyframe is later than t=0 must still start from the
@@ -97,7 +109,13 @@ function compile(def: ScenarioDefinition): CompiledScenario {
     points.unshift({ t: 0, v: baseline[metric] });
   }
 
-  const compiled: CompiledScenario = { tracks, logs, actions, robotPatches };
+  const compiled: CompiledScenario = {
+    tracks,
+    logs,
+    actions,
+    robotPatches,
+    signagePatches,
+  };
   cache.set(def, compiled);
   return compiled;
 }
@@ -156,7 +174,43 @@ export function deriveState(
   }
   const robots = [...robotById.values()];
 
+  /* --- signage --------------------------------------------------- */
+  const signageById = new Map<string, SignageState>(
+    SIGNAGE.map((s) => [
+      s.id,
+      {
+        ...s,
+        message: s.baseMessage,
+        overridden: false,
+        changedAt: null,
+        changeReason: null,
+      },
+    ]),
+  );
+  for (const { t: at, patch } of compiled.signagePatches) {
+    if (at > t) continue;
+    for (const id of patch.ids) {
+      const current = signageById.get(id);
+      // An offline display keeps showing whatever it last had; the AI can
+      // push to it, but the UI is honest that nothing is rendering.
+      if (!current) continue;
+      signageById.set(id, {
+        ...current,
+        message: patch.message,
+        overridden: true,
+        changedAt: clockAt(at),
+        changeReason: patch.reason,
+      });
+    }
+  }
+  const signage = [...signageById.values()];
+
   /* --- buildings ------------------------------------------------- */
+  // Trend compares against the same wall-clock distance in every scenario,
+  // so a faster timeScale does not make every arrow look steeper.
+  const trendLookbackSec = (CROWD_TREND_LOOKBACK_MIN * 60) / definition.timeScale;
+  const trendFrom = Math.max(0, t - trendLookbackSec);
+
   const insightBlueprint = definition.insight;
   const insightActive =
     insightBlueprint !== null && t >= insightBlueprint.appearsAt;
@@ -180,12 +234,19 @@ export function deriveState(
     const predicts =
       insightActive && !insightResolved && insightBlueprint?.buildingId === base.id;
 
+    const crowdTrack = compiled.tracks.get(`${base.id}:crowd`);
+    const crowdBefore = roundMetric(
+      "crowd",
+      sample(crowdTrack, trendFrom, baseline.crowd),
+    );
+
     return {
       ...base,
       ...metrics,
       population: Math.round((base.capacity * metrics.crowd) / 100),
       status: buildingStatusOf(metrics.crowd),
       crowdLevel: crowdLevelOf(metrics.crowd),
+      crowdTrend: metrics.crowd - crowdBefore,
       prediction: predicts ? insightBlueprint.prediction : null,
       predictionHorizon: predicts ? insightBlueprint.horizonMin : null,
       robots: robots.filter((r) => r.buildingId === base.id),
@@ -231,6 +292,7 @@ export function deriveState(
     clock: clockAt(t),
     buildings,
     robots,
+    signage,
     campus,
     insight,
     actions,
