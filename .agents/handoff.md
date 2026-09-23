@@ -1,17 +1,16 @@
 # Handoff
 
-마지막 갱신: 2026-09-23 (세션 5)
+마지막 갱신: 2026-09-23 (세션 6)
 
 ## Current Goal
 
-**Phase 6(Polish) 완료. 명세의 Phase 목록이 전부 끝났다.**
+**명세에 적힌 것이 전부 구현됐다.** Phase 1~6 + 선택 항목이던 행사 시나리오까지.
 
-Landing 스크롤 8섹션, 반응형, 데모 흐름 완주, 잔여 이슈 정리까지 했다.
+**스텁은 하나도 남지 않았다.** 시나리오 4종이 모두 `available: true`이고,
+사이드바 8개 메뉴도 전부 살아 있다. 시나리오 선택기와 랜딩 Use Cases에
+비활성 항목이 없다.
+
 `typecheck` / `lint` / `build` 3종 통과, 프로덕션 빌드에서도 직접 로드를 확인했다.
-
-남은 선택 항목은 **행사(졸업작품전) 시나리오** 하나뿐이다. `EVENT`는 여전히
-`available: false` 스텁이고, 명세 Phase 목록에는 없다. 랜딩 Use Cases에도
-"준비 중"으로 정직하게 노출된다.
 
 ## Fixed Decisions
 
@@ -43,6 +42,8 @@ Landing 스크롤 8섹션, 반응형, 데모 흐름 완주, 잔여 이슈 정리
 - Digital Twin `/dashboard/twin` — 넓은 맵 + AI Insight + Buildings.
 - Building Detail Panel — 커스텀 Sheet(백드롭, Escape, 포커스 복원).
 - Crowd 시나리오 — 82% → 91% 피크 → AI 대응 3건 → 68% 안정화 → RESOLVED.
+- **Event 시나리오** — 졸업작품전. 학생회관 광장 71% → 88% 피크 → AI 대응 4건 → 74%.
+  아래 "Event 시나리오" 절 참고.
 - 인원 흐름 / 스마트 사이니지 / 로봇 관제 / 에너지 / AI 리포트.
 - Emergency / SafeFlow — 6단계, 경로 5개, 물리 시스템 5종, 260→180초(31%).
 
@@ -70,6 +71,27 @@ Landing 스크롤 8섹션, 반응형, 데모 흐름 완주, 잔여 이슈 정리
   형제 간 시차는 `--reveal-step`(= `revealStep(i)`)으로 `animation-range`를 밀어서 준다.
   delay가 아니라 range를 미는 이유는, 스크롤 타임라인에서 delay는 스크롤 위치와 싸우기 때문이다.
 
+## Event 시나리오 (세션 6)
+
+졸업작품전. **혼잡과 다른 점은 "몰리는 걸 막는" 게 아니라 "어디로 걸을지를 정하는"
+것이다.** 방문객은 주차장에 차를 대고 공학관 3층 전시장으로 향한다. 그냥 두면
+전부 학생회관 광장 한 곳을 통과하므로, AI가 절반을 중앙 보행로(본관 경유)로 쪼개고
+놀고 있던 안내로봇 2대를 그 경로에 투입한다.
+
+- `focusBuildingId: "student-center"` / `flowFromBuildingId: "parking"`.
+  전시장은 공학관이지만 **AI가 막는 혼잡은 학생회관 광장**이라 focus가 거기다.
+  맵의 유입 곡선은 주차장 → 학생회관으로 그려진다.
+- 예측 88%는 **실제로 도달하는 피크와 같은 값**이다(t=24). 인사이트 카드가 해소 후
+  그 숫자를 "최고치"로 재사용하기 때문이다 — 혼잡·비상과 같은 규칙.
+- AI 대응 4건: 행사 안내 사이니지(3면) / 광장 우회 안내(1면) / 안내로봇 2대 투입 /
+  전시장 전용 엘리베이터. 사이니지는 6면이 바뀐다(주차장 게이트·엘리베이터 홀 포함).
+- 로봇 패치 2건은 `buildingId`까지 옮긴다. GDE-01 본관→공학관, GDE-04 도서관→주차장.
+  둘 다 `대기` → `안내 중`이라 "안내로봇 활성화"가 로봇 페이지에서 실제로 보인다.
+- **끝나도 CAUTION으로 남는다.** 행사일은 원래 붐빈다. AI가 없앤 건 집중이지
+  방문객이 아니다. 끝에 caution인 세 번째 건물(본관 71%)은 **AI가 그리로 보냈기 때문에**
+  붐비는 것이다. 혼잡 시나리오가 NORMAL로 끝나는 것과 의도적으로 다르다.
+- 최종: 인원 3,030 / 혼잡 구역 5 / AI 대응 51(47+4) / 리포트 71%→88%→74%.
+
 ## Design Decisions
 
 - **화면 텍스트는 전부 한글.** 상태값·코드·브랜드명·단위만 영문.
@@ -81,15 +103,20 @@ Landing 스크롤 8섹션, 반응형, 데모 흐름 완주, 잔여 이슈 정리
   랜딩의 예측 차트와 인원 유도 카드에 붙인다.
 - 컴포넌트에 개수를 적지 않는다.
 - `TwinPanel`은 `legend` prop을 받는다. 비상 페이지는 `SAFEFLOW_LEGEND`를 넘긴다.
+- 건물 상세 패널의 하단 버튼은 **그 건물을 focus로 갖는 실행 가능한 시나리오 전부**를
+  띄운다. 공학관은 2개(혼잡·비상), 학생회관은 1개(행사), 나머지는 0개라 푸터가 없다.
+  시나리오를 하나 하드코딩하지 않는다.
 
 ## Simulation Decisions
 
 - 시나리오 = 키프레임 타임라인. `deriveState(scenario, elapsed)`가 단일 진실 원천.
-- `timeScale: 10` — 재생 1초 = 시뮬 10초. 세 시나리오 모두 60초 재생 = 14:30 → 14:40.
+- `timeScale: 10` — 재생 1초 = 시뮬 10초. 네 시나리오 모두 60초 재생 = 14:30 → 14:40.
 - 인원 = `capacity × crowd / 100`. baseline 합계가 정확히 2,418.
 - Campus Status는 "가장 나쁜 건물"이 아니다. 비상 시나리오에서는 CRITICAL로 고정한다.
 - 집결지 건물은 `t=28`에 baseline 값을 박아 둔다(엔진의 t=0 자동 앵커 때문).
-- 비상 시나리오의 예측치(89%)는 실제 도달하는 피크와 같은 값이다.
+- **예측치는 실제 도달하는 피크와 같은 값이어야 한다**(혼잡 91 · 행사 88 · 비상 89).
+  인사이트 카드가 해소된 뒤 그 숫자를 "최고치"로 재사용하기 때문에, 회피한 값을 넣으면
+  카드가 거짓말을 하게 된다.
 - SafeFlow 수치는 계산이지 입력이 아니다. 124 = 68+41+15 = 78+46. 31% = (260−180)/260.
 - **에너지 반올림** — 건물 kW를 각각 반올림하고 그 합을 캠퍼스 합계로 쓴다.
 
@@ -106,6 +133,8 @@ Landing 스크롤 8섹션, 반응형, 데모 흐름 완주, 잔여 이슈 정리
   `CampusMapView`(순수)** 둘로 나뉘어 있다. 랜딩은 스냅샷을 `CampusMapView`에 넘긴다.
 - `src/components/ui/button.tsx` — `Button` 과 `buttonClasses()`.
 - `src/components/dashboard/mobile-nav.tsx` — lg 미만에서 사이드바를 대신한다.
+- `src/components/digital-twin/building-detail-panel.tsx` — 하단 시나리오 실행 버튼은
+  `SCENARIO_ORDER`를 `focusBuildingId`로 걸러서 만든다.
 
 ## Responsive
 
@@ -122,7 +151,6 @@ Landing 스크롤 8섹션, 반응형, 데모 흐름 완주, 잔여 이슈 정리
 
 ## Known Issues
 
-- Event 시나리오는 `available: false` 스텁이다. 선택기와 랜딩 Use Cases에서 비활성으로 보인다.
 - `src/components/ui/skeleton.tsx`는 지금 아무도 쓰지 않는다. `loading.tsx`를 지웠기 때문이다
   (이유는 CLAUDE.md "건드리면 깨지는 것"). 프리미티브는 남겨 두었다.
 - 평상시 시나리오는 `focusBuildingId` · `insight`가 없어서 실행 리포트에 트리거·결과 칸이 빠진다.
@@ -139,27 +167,39 @@ Landing 스크롤 8섹션, 반응형, 데모 흐름 완주, 잔여 이슈 정리
 
 ## Last Session Summary
 
-Phase 6을 계획 승인 뒤 Landing → 반응형 → 데모 흐름 → 잔여 이슈 순으로 진행했다.
+선택 항목이던 **행사(졸업작품전) 시나리오**를 구현했다. 새 페이지 없이 기존 화면들이
+전부 반응한다 — 타임라인 하나를 추가한 것이 전부다.
+
+1. `scenarios.ts`의 `EVENT` 스텁을 21개 키프레임 타임라인으로 교체하고
+   `available: true`로 올렸다. 자세한 설계는 위 "Event 시나리오" 절.
+2. 건물 상세 패널의 하단 버튼을 일반화했다. 전에는 혼잡 시나리오를 하드코딩해
+   공학관에만 버튼이 있었는데, 이제 `focusBuildingId`로 걸러서 공학관 2개 ·
+   학생회관 1개 · 나머지 0개가 된다.
+3. 랜딩 Use Cases의 행사 카드에 hover 테두리를 줬다(이제 링크라서).
+
+**나머지는 코드 변경 없이 그냥 동작했다** — 시나리오 선택기, 랜딩 Use Cases,
+KPI, 맵 유입 곡선, 사이니지 6면, 로봇 재배치 2대, 에너지, 실행 리포트 전부
+`available` 과 `deriveState` 만 보고 있었기 때문이다.
+
+브라우저에서 행사 시나리오를 끝까지 재생해 확인했다:
+CAUTION / 인원 3,030 / 혼잡 구역 5 / AI 대응 51 / 리포트 71%→88%→74%(피크 대비 14%p) /
+사이니지 6면 변경 / 안내로봇 GDE-01·GDE-04 재배치 / 활동 로그 행사 16건.
+비상 페이지는 행사 시나리오에서 빈 상태를 정확히 보여준다.
+
+`npm run typecheck` / `lint` / `build` 모두 통과.
+
+### 이전 세션 (Phase 6 Polish)
 
 1. **맵 분리** — `campus-map.tsx`를 `CampusMap`(연결) / `CampusMapView`(순수)로 쪼갰다.
-   대시보드 호출부는 한 줄도 바뀌지 않았다. 랜딩이 실제 맵을 쓸 수 있게 된 유일한 길이었다.
 2. **Landing 8섹션** — 위 표대로. `globals.css`에 `.reveal` 추가.
-3. **반응형** — 사이드바 `hidden lg:flex`, `MobileNav` 신설, Topbar 재구성,
-   `main` 패딩 `px-4 sm:px-6`. 9개 화면 4개 폭 확인.
-4. **데모 흐름 완주** — 소개 → Dashboard → 공학관 선택 → 혼잡 시뮬(68%까지 완주) →
-   비상 시뮬(6/6 ACTIVATED) → SafeFlow → AI 리포트(SafeFlow 블록 포함)까지 한 번에 통과.
+3. **반응형** — 사이드바 `hidden lg:flex`, `MobileNav` 신설, Topbar 재구성.
+4. **데모 흐름 완주** — 소개 → Dashboard → 공학관 → 혼잡 → 비상 → SafeFlow → AI 리포트.
 
 지나가다 고친 것:
 - **`dashboard/loading.tsx`가 대시보드 8개 페이지 전부를 직접 로드 시 멈추게 하고 있었다.**
   route 단위 Suspense 경계가 레이아웃의 `useSearchParams`와 겹쳐 boundary가 영영 pending으로
-  남는다. `071974e`에도 있던 문제다(stash로 확인). 파일을 지워서 해결했고 CLAUDE.md에 적었다.
-- 맵 건물의 클릭 사각지대 → 실루엣 육각형 히트 폴리곤(`silhouettePoints`, `pointerEvents="all"`).
-  옆면 이음매를 클릭해도 패널이 열리는 것을 확인했다.
+  남는다. `071974e`에도 있던 문제다. 파일을 지워서 해결했고 CLAUDE.md에 적었다.
+- 맵 건물의 클릭 사각지대 → 실루엣 육각형 히트 폴리곤(`silhouettePoints`).
 - `<Link><Button>` 중첩을 `<Link className={buttonClasses(...)}>`로 바꿨다.
-  (버튼이 안 눌리던 것은 아니다 — 중첩 버튼도 앵커로 버블링해 이동한다. `<a>` 안의 `<button>`이
-  잘못된 마크업이고 가운데클릭·새 탭 열기가 깨지기 때문에 고친 것이다.)
-- 랜딩의 대피 시간을 대시보드와 같은 `formatSimDuration` 형식(04:20 → 03:00)으로 맞췄다.
+- 랜딩의 대피 시간을 `formatSimDuration` 형식(04:20 → 03:00)으로 맞췄다.
 - 미사용 `coming-soon.tsx` 삭제.
-
-`npm run typecheck` / `lint` / `build` 모두 통과.
-프로덕션 빌드(3003)에서 `/dashboard`, `/dashboard/emergency` 직접 로드를 확인했다.
