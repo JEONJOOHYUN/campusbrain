@@ -29,6 +29,7 @@
   --animate-pulse-soft: pulse-soft 2.4s ease-in-out infinite;
   --animate-scan: scan 3.2s linear infinite;
   --animate-rise: rise 0.35s ease-out both;
+  --animate-draw: draw 1.4s ease-out both;
   --animate-slide-in: slide-in-right 0.25s ease-out both;
 }
 
@@ -57,6 +58,17 @@
   }
   100% {
     transform: translateY(400%);
+  }
+}
+
+/* Evacuation routes draw themselves on. Paths carry pathLength="1", so one
+   set of keyframes works for every route length. */
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
   }
 }
 

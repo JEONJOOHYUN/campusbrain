@@ -1,3 +1,4 @@
+import { SAFEFLOW_PLAN } from "@/data/safeflow";
 import type { ScenarioDefinition, SimulationScenario } from "@/types";
 
 /* ------------------------------------------------------------------ *
@@ -21,6 +22,7 @@ const NORMAL: ScenarioDefinition = {
   focusBuildingId: null,
   flowFromBuildingId: null,
   insight: null,
+  safeflow: null,
   available: true,
   keyframes: [
     {
@@ -119,6 +121,7 @@ const CROWD: ScenarioDefinition = {
   focusBuildingId: "engineering",
   flowFromBuildingId: "main",
   available: true,
+  safeflow: null,
   insight: {
     id: "insight-crowd-engineering",
     buildingId: "engineering",
@@ -381,23 +384,391 @@ const EVENT: ScenarioDefinition = {
   focusBuildingId: null,
   flowFromBuildingId: null,
   insight: null,
+  safeflow: null,
   keyframes: [],
   available: false,
 };
 
+/**
+ * SafeFlow — the spec's core demo. Six phases over ten simulated minutes:
+ * detect, analyse the risk area, locate people, compute safe routes,
+ * coordinate the physical systems, activate. The phase list and the route
+ * geometry live in `data/safeflow.ts`; the numbers below are the timeline
+ * that makes them happen.
+ */
 const EMERGENCY: ScenarioDefinition = {
   id: "emergency",
   label: "비상",
-  headline: "SafeFlow 대피 대응",
-  description: "화재 대응 SafeFlow 시나리오는 다음 단계에서 구현됩니다.",
-  durationSec: 0,
+  headline: "공학관 화재 — SafeFlow 대피 대응",
+  description:
+    "공학관 3층 동편에서 화재가 감지됩니다. AI가 위험 구역과 인원 위치를 분석해 안전 대피경로를 산출하고, 출입문·사이니지·로봇·방송을 동시에 작동시킵니다.",
+  durationSec: 60,
   timeScale: 10,
   clockStart: "14:30",
-  focusBuildingId: null,
+  focusBuildingId: "engineering",
+  // The crowd here flows out, not in — the evacuation routes are drawn by
+  // the SafeFlow layer instead of the inbound flow curve.
   flowFromBuildingId: null,
-  insight: null,
-  keyframes: [],
-  available: false,
+  available: true,
+  safeflow: SAFEFLOW_PLAN,
+  insight: {
+    id: "insight-emergency-engineering",
+    buildingId: "engineering",
+    title: "공학관 3층 화재 — 저층 출구 혼잡 예측",
+    summary:
+      "동편 실험동에서 연기가 감지되었습니다. 현재 인원 분포로는 2분 내 중앙 계단과 1층 로비에 혼잡이 집중됩니다.",
+    prediction: 89,
+    horizonMin: 2,
+    confidence: 96,
+    recommendation: "동편 복도를 차단하고 남측·서편 비상계단으로 대피 동선을 유도하세요.",
+    severity: "critical",
+    appearsAt: 6,
+    resolvesAt: 54,
+    resolution:
+      "출구 혼잡이 예측된 89%를 넘지 않았습니다. 안전 경로 2개로 분산된 뒤 공학관 재실이 계속 감소했습니다.",
+    steps: [
+      {
+        stage: "observe",
+        label: "3층 동편 연기 감지",
+        detail: "연기 감지기 3대 · AI Vision 확인",
+        t: 4,
+      },
+      {
+        stage: "predict",
+        label: "2분 후 출구 혼잡 89% 예측",
+        detail: "중앙 계단 집중 · 신뢰도 96%",
+        t: 16,
+      },
+      {
+        stage: "decide",
+        label: "SafeFlow 대피 계획 선택",
+        detail: "동편 차단 · 안전 경로 2개 · 집결지 2개소",
+        t: 24,
+      },
+      {
+        stage: "act",
+        label: "물리 시스템 5종 작동",
+        detail: "출입문 2 · 사이니지 · 로봇 · 방송",
+        t: 42,
+      },
+    ],
+  },
+  keyframes: [
+    {
+      t: -12,
+      log: {
+        category: "emergency",
+        stage: "observe",
+        severity: "info",
+        title: "소방 설비 자가진단 완료 — 이상 없음",
+        location: "캠퍼스 전체",
+      },
+    },
+    {
+      t: -6,
+      log: {
+        category: "crowd",
+        stage: "observe",
+        severity: "info",
+        title: "캠퍼스 전역 재실 스캔 완료",
+        location: "건물 6개소",
+      },
+    },
+    {
+      t: 0,
+      metrics: {
+        engineering: { crowd: 82, energy: 74, temperature: 23.4, airQuality: 52 },
+      },
+      log: {
+        category: "emergency",
+        stage: "observe",
+        severity: "critical",
+        title: "공학관 3층 동편 연기 감지",
+        location: "공학관 3층 실험동",
+        target: "연기 감지기 3대",
+      },
+    },
+    {
+      t: 4,
+      metrics: { engineering: { crowd: 84, temperature: 25.8, airQuality: 78 } },
+      log: {
+        category: "emergency",
+        stage: "observe",
+        severity: "critical",
+        title: "AI Vision 화재 확인 — SafeFlow 개시",
+        location: "공학관 3층 동편",
+      },
+    },
+    {
+      t: 10,
+      metrics: { engineering: { crowd: 85, temperature: 27.4, airQuality: 96 } },
+      log: {
+        category: "emergency",
+        stage: "observe",
+        severity: "critical",
+        title: "위험 구역 산출 — 동편 실험동·중앙 계단",
+        location: "공학관",
+        target: "연기 확산 예측",
+      },
+    },
+    {
+      t: 16,
+      metrics: { engineering: { crowd: 86, temperature: 28.4, airQuality: 112 } },
+      log: {
+        category: "crowd",
+        stage: "observe",
+        severity: "warning",
+        title: "공학관 재실 인원 위치 분석 완료",
+        location: "공학관 9개 층",
+      },
+    },
+    {
+      // Same moment, the other half of the analysis: where those people are
+      // about to pile up.
+      t: 16,
+      log: {
+        category: "crowd",
+        stage: "predict",
+        severity: "critical",
+        title: "저층 출구 혼잡 예측 — 2분 내 89%",
+        location: "공학관 중앙 계단",
+        target: "신뢰도 96%",
+      },
+    },
+    {
+      t: 24,
+      metrics: { engineering: { crowd: 88, temperature: 29.6, airQuality: 124 } },
+      log: {
+        category: "emergency",
+        stage: "decide",
+        severity: "critical",
+        title: "SafeFlow 대피 계획 선택",
+        location: "공학관",
+        target: "안전 경로 2 · 차단 3",
+      },
+    },
+    {
+      t: 28,
+      // The rest of the campus holds its baseline until the doors open.
+      // Without these anchors the engine would ramp the assembly areas up
+      // from t=0, filling them before anyone had been told to leave.
+      metrics: {
+        engineering: { crowd: 89 },
+        parking: { crowd: 26 },
+        "student-center": { crowd: 71 },
+        gymnasium: { crowd: 37 },
+        main: { crowd: 48 },
+      },
+      action: {
+        id: "act-door-gate-b",
+        kind: "door",
+        buildingId: "engineering",
+        label: "B출입구 개방",
+        detail: "남측 비상계단 → 주차장 집결지",
+      },
+      log: {
+        category: "emergency",
+        stage: "act",
+        severity: "critical",
+        title: "B출입구 비상 개방",
+        location: "공학관 남측",
+        target: "주차장 집결지",
+      },
+    },
+    {
+      t: 32,
+      metrics: { engineering: { crowd: 86 }, parking: { crowd: 30 } },
+      action: {
+        id: "act-door-east-restricted",
+        kind: "door",
+        buildingId: "engineering",
+        label: "동편 복도 차단",
+        detail: "동편 연결통로 · 중앙 계단 접근 제한",
+      },
+      log: {
+        category: "emergency",
+        stage: "act",
+        severity: "critical",
+        title: "동편 복도 접근 차단",
+        location: "공학관 동편 연결통로",
+        target: "고위험 경로 3개",
+      },
+    },
+    {
+      t: 36,
+      metrics: { engineering: { crowd: 78 }, parking: { crowd: 36 } },
+      action: {
+        id: "act-signage-evacuation",
+        kind: "signage",
+        buildingId: "engineering",
+        label: "비상 대피 사이니지",
+        detail: "대피 방향 전환 · 디스플레이 7대",
+      },
+      signage: {
+        ids: ["SGN-04", "SGN-06", "SGN-07"],
+        message: {
+          kind: "evacuation",
+          headline: "화재 발생 — 즉시 대피",
+          sub: "남측 비상계단 → B출입구",
+          arrow: "right",
+        },
+        reason: "공학관 3층 동편 화재 감지에 따른 대피 유도",
+      },
+      log: {
+        category: "signage",
+        stage: "act",
+        severity: "critical",
+        title: "비상 대피 사이니지 활성화",
+        location: "공학관 · 중앙 보행로",
+        target: "디스플레이 7대",
+      },
+    },
+    {
+      // The corridor that stays open says where it leads, not what happened.
+      t: 36,
+      signage: {
+        ids: ["SGN-05"],
+        message: {
+          kind: "evacuation",
+          headline: "서편 비상계단 개방",
+          sub: "학생회관 광장 방면 · 통행 가능",
+          arrow: "left",
+        },
+        reason: "공학관 3층 동편 화재 감지에 따른 대피 유도",
+      },
+    },
+    {
+      // Displays outside the building are keeping people away rather than
+      // moving them out — a warning, not an evacuation sign.
+      t: 36,
+      signage: {
+        ids: ["SGN-01", "SGN-02", "SGN-03"],
+        message: {
+          kind: "alert",
+          headline: "공학관 접근 제한",
+          sub: "소방 진입 동선 · 우회하세요",
+        },
+        reason: "공학관 3층 동편 화재 감지에 따른 대피 유도",
+      },
+    },
+    {
+      t: 39,
+      metrics: { engineering: { crowd: 70 }, parking: { crowd: 41 } },
+      action: {
+        id: "act-robot-guide-dispatch",
+        kind: "robot",
+        buildingId: "engineering",
+        label: "안내로봇 02 투입",
+        detail: "서편 비상계단 대피 유도",
+      },
+      robot: {
+        id: "GDE-02",
+        buildingId: "engineering",
+        task: "대피 유도 — 서편 비상계단",
+        location: "공학관 1층 서편",
+        status: "대피 유도 중",
+      },
+      log: {
+        category: "robot",
+        stage: "act",
+        severity: "critical",
+        title: "안내로봇 02 대피 유도 투입",
+        location: "공학관 1층 서편",
+        target: "GDE-02",
+      },
+    },
+    {
+      // Clearing the route matters as much as marking it.
+      t: 39,
+      robot: {
+        id: "CLN-04",
+        task: "대피 경로 확보 — 지하 도크 복귀",
+        location: "공학관 지하1층 도크",
+        status: "경로 확보 중",
+      },
+      log: {
+        category: "robot",
+        stage: "act",
+        severity: "info",
+        title: "청소로봇 04 대피 경로에서 철수",
+        location: "공학관 1층 로비",
+        target: "CLN-04",
+      },
+    },
+    {
+      t: 42,
+      metrics: {
+        engineering: { crowd: 60, temperature: 30.4, airQuality: 132 },
+        parking: { crowd: 46 },
+      },
+      action: {
+        id: "act-broadcast-emergency",
+        kind: "broadcast",
+        buildingId: "engineering",
+        label: "비상 방송 송출",
+        detail: "공학관 전층 · 3개 국어 안내",
+      },
+      log: {
+        category: "emergency",
+        stage: "act",
+        severity: "critical",
+        title: "비상 방송 송출 — 공학관 전층",
+        location: "공학관",
+        target: "3개 국어",
+      },
+    },
+    {
+      t: 48,
+      metrics: {
+        engineering: { crowd: 28, energy: 55, temperature: 31.6, airQuality: 140 },
+        parking: { crowd: 56 },
+        "student-center": { crowd: 78 },
+        gymnasium: { crowd: 44 },
+        main: { crowd: 50 },
+      },
+      log: {
+        category: "emergency",
+        stage: "act",
+        severity: "critical",
+        title: "대응 활성화 완료 — 대피 유도 중",
+        location: "공학관",
+        target: "안전 경로 2개",
+      },
+    },
+    {
+      t: 54,
+      metrics: {
+        engineering: { crowd: 15 },
+        parking: { crowd: 63 },
+        "student-center": { crowd: 79 },
+        gymnasium: { crowd: 47 },
+      },
+      log: {
+        category: "crowd",
+        stage: "observe",
+        severity: "warning",
+        title: "공학관 재실 급감 — 대피 진행 중",
+        location: "공학관",
+      },
+    },
+    {
+      t: 60,
+      metrics: {
+        engineering: { crowd: 9, energy: 38, temperature: 32.2, airQuality: 148 },
+        parking: { crowd: 67 },
+        "student-center": { crowd: 80 },
+        gymnasium: { crowd: 48 },
+        main: { crowd: 52 },
+      },
+      log: {
+        category: "emergency",
+        stage: "observe",
+        severity: "info",
+        title: "공학관 대피 완료 — 집결지 인원 확인",
+        location: "주차장 집결지",
+      },
+    },
+  ],
 };
 
 export const SCENARIOS: Record<SimulationScenario, ScenarioDefinition> = {

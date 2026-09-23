@@ -44,7 +44,9 @@ interface TimedAction {
 
 interface TimedRobotPatch {
   t: number;
-  patch: { id: string } & Partial<Pick<RobotBase, "task" | "location" | "status">>;
+  patch: { id: string } & Partial<
+    Pick<RobotBase, "task" | "location" | "status" | "buildingId">
+  >;
 }
 
 interface TimedSignagePatch {
@@ -281,7 +283,12 @@ export function deriveState(
     };
   }
 
-  const campus = deriveCampusKpi(buildings, robots, actions.length);
+  const campus = deriveCampusKpi(
+    buildings,
+    robots,
+    actions.length,
+    definition.safeflow !== null,
+  );
 
   return {
     scenario,

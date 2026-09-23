@@ -197,6 +197,60 @@ export interface AiAction extends AiActionBlueprint {
   at: string;
 }
 
+/* --- SafeFlow (emergency) ----------------------------------------- */
+
+/** The six steps of a SafeFlow run, in order. */
+export type SafeFlowPhaseId =
+  | "detect"
+  | "risk"
+  | "crowd"
+  | "route"
+  | "coordinate"
+  | "activate";
+
+export interface SafeFlowPhase {
+  id: SafeFlowPhaseId;
+  label: string;
+  detail: string;
+  /** Playback second at which this step completes. */
+  t: number;
+}
+
+/** Where the fire is, as the detectors report it. */
+export interface SafeFlowFire {
+  buildingId: BuildingId;
+  /** Floor and wing, e.g. "3층 동편". */
+  floor: string;
+  /** The area the AI marks as unsafe. */
+  zone: string;
+  /** How it was detected. */
+  detail: string;
+}
+
+export type SafeFlowRouteKind = "safe" | "blocked";
+
+export interface SafeFlowRoute {
+  id: string;
+  kind: SafeFlowRouteKind;
+  label: string;
+  detail: string;
+  /**
+   * People the AI moved onto this route (safe) or off it (blocked). The two
+   * sides balance: everyone taken off a blocked route is put on a safe one.
+   */
+  people: number;
+  /** Waypoints in the Digital Twin's 960 x 560 SVG space. */
+  points: [number, number][];
+}
+
+export interface SafeFlowPlan {
+  fire: SafeFlowFire;
+  phases: SafeFlowPhase[];
+  routes: SafeFlowRoute[];
+  /** Evacuation times the improvement is measured between, in seconds. */
+  evacuation: { baselineSec: number; safeflowSec: number };
+}
+
 /* --- Activity log ------------------------------------------------- */
 
 export type ActivityCategory =
@@ -244,7 +298,9 @@ export interface ScenarioKeyframe {
   /** An AI action that becomes active at this moment. */
   action?: AiActionBlueprint;
   /** A robot re-tasking that takes effect at this moment. */
-  robot?: { id: string } & Partial<Pick<RobotBase, "task" | "location" | "status">>;
+  robot?: { id: string } & Partial<
+    Pick<RobotBase, "task" | "location" | "status" | "buildingId">
+  >;
   /** A signage push that takes effect at this moment. */
   signage?: {
     ids: string[];
@@ -274,6 +330,8 @@ export interface ScenarioDefinition {
    */
   flowFromBuildingId: BuildingId | null;
   insight: AiInsightBlueprint | null;
+  /** Fire-response plan this scenario executes. Null outside an emergency run. */
+  safeflow: SafeFlowPlan | null;
   keyframes: ScenarioKeyframe[];
   /** False while the scenario is still a stub. */
   available: boolean;

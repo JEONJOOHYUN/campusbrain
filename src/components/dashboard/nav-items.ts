@@ -24,6 +24,6 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/signage", label: "스마트 사이니지", icon: IconSignage, ready: true },
   { href: "/dashboard/robots", label: "로봇 관제", icon: IconRobot, ready: true },
   { href: "/dashboard/energy", label: "에너지", icon: IconEnergy, ready: true },
-  { href: "/dashboard/emergency", label: "비상 대응", icon: IconEmergency, ready: false },
+  { href: "/dashboard/emergency", label: "비상 대응", icon: IconEmergency, ready: true },
   { href: "/dashboard/reports", label: "AI 리포트", icon: IconReports, ready: true },
 ];

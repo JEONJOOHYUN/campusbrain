@@ -1,6 +1,8 @@
 "use client";
 
 import { buildScenarioReport, formatSimDuration } from "@/lib/simulation/report";
+import { deriveSafeFlow } from "@/lib/simulation/safeflow";
+import { SafeFlowOutcomeStats } from "@/components/emergency/safeflow-outcome";
 import { AI_ACTION_KIND_LABEL } from "@/components/dashboard/status";
 import { IconPlay, IconReports } from "@/components/icons";
 import { useSimulation } from "@/components/simulation/simulation-provider";
@@ -19,6 +21,9 @@ import { cn } from "@/lib/utils";
 export function ScenarioReportCard() {
   const { state, isPlaying, runScenario } = useSimulation();
   const report = buildScenarioReport(state);
+  // An emergency run has numbers the generic report cannot express, so it
+  // adds a section rather than changing what every other scenario shows.
+  const safeflow = deriveSafeFlow(state);
 
   const header = (
     <CardHeader>
@@ -137,6 +142,18 @@ export function ScenarioReportCard() {
             note={`시뮬레이션 시각 · 기록 ${report.logCount}건`}
           />
         </dl>
+
+        {safeflow?.activated && (
+          <div className="space-y-3 border-t border-line pt-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone="danger">SafeFlow 결과</Badge>
+              <span className="text-[11px] text-muted">
+                {safeflow.fire.buildingName} {safeflow.fire.floor} 화재 대응
+              </span>
+            </div>
+            <SafeFlowOutcomeStats outcome={safeflow.outcome} />
+          </div>
+        )}
 
         <p className="text-[11px] leading-relaxed text-muted">
           이 리포트는 브라우저 세션 동안만 유지됩니다. 시나리오를 바꾸거나 리셋하면

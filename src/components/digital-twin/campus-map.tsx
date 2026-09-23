@@ -3,7 +3,8 @@
 import { useId } from "react";
 import { useSimulation } from "@/components/simulation/simulation-provider";
 import { statusTone } from "@/components/dashboard/status";
-import type { BuildingShape, BuildingState } from "@/types";
+import { deriveSafeFlow, type SafeFlowSnapshot } from "@/lib/simulation/safeflow";
+import type { BuildingShape, BuildingState, SafeFlowRoute } from "@/types";
 import { cn } from "@/lib/utils";
 
 const VIEW_W = 960;
@@ -50,6 +51,30 @@ function flowPath(from: BuildingShape, to: BuildingShape): string {
   const cx = (sx + tx) / 2 - 20;
   const cy = (sy + ty) / 2 + 48;
   return `M ${sx} ${sy} Q ${cx} ${cy} ${tx} ${ty}`;
+}
+
+/* --- SafeFlow geometry -------------------------------------------- */
+
+/** An evacuation route, as a path through its waypoints. */
+function routePath(route: SafeFlowRoute): string {
+  return route.points
+    .map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x} ${y}`)
+    .join(" ");
+}
+
+/** The risk area around the fire: the building's ground tile, grown. */
+function riskZonePoints(shape: BuildingShape, margin: number): string {
+  // Depth grows in proportion so the ring keeps the isometric angle.
+  return groundPoints({
+    ...shape,
+    w: shape.w + margin,
+    d: shape.d + margin * (shape.d / shape.w),
+  });
+}
+
+/** Where the flame sits: on the roof plane, towards the building's east side. */
+function firePoint(shape: BuildingShape): { x: number; y: number } {
+  return { x: shape.x + shape.w * 0.45, y: shape.y - shape.h - shape.d * 0.25 };
 }
 
 /** Ground grid, drawn in the same isometric direction as the buildings. */
@@ -107,6 +132,12 @@ export function CampusMap({ className }: CampusMapProps) {
   const flowSource =
     focusId && flowFromId ? state.buildings.find((b) => b.id === flowFromId) : null;
   const flowTarget = focusId ? state.buildings.find((b) => b.id === focusId) : null;
+
+  const safeflow = deriveSafeFlow(state);
+  const fireBuilding =
+    safeflow && safeflow.reached.detect
+      ? state.buildings.find((b) => b.id === safeflow.fire.buildingId)
+      : null;
 
   return (
     <div className={cn("relative w-full overflow-hidden rounded-xl", className)}>
@@ -185,17 +216,187 @@ export function CampusMap({ className }: CampusMapProps) {
           </g>
         )}
 
+        {/* SafeFlow lies on the ground plane, so the buildings stand on top
+            of it and the routes read as paths between them. */}
+        {safeflow && fireBuilding && (
+          <SafeFlowGround safeflow={safeflow} fireShape={fireBuilding.shape} />
+        )}
+
         {ordered.map((b) => (
           <BuildingNode
             key={b.id}
             building={b}
             selected={selectedBuildingId === b.id}
             focused={focusId === b.id}
+            onFire={fireBuilding?.id === b.id}
             onSelect={() => selectBuilding(b.id)}
           />
         ))}
+
+        {/* The flame sits above everything — it is the one thing on the map
+            that must never be occluded. */}
+        {fireBuilding && <FireMarker shape={fireBuilding.shape} />}
       </svg>
     </div>
+  );
+}
+
+/* --- SafeFlow layers ----------------------------------------------- */
+
+function SafeFlowGround({
+  safeflow,
+  fireShape,
+}: {
+  safeflow: SafeFlowSnapshot;
+  fireShape: BuildingShape;
+}) {
+  const { reached, safeRoutes, blockedRoutes } = safeflow;
+
+  return (
+    <g>
+      {/* Risk area — the ground the AI marks as unsafe. */}
+      {reached.risk && (
+        <g>
+          <polygon
+            points={riskZonePoints(fireShape, 46)}
+            fill="var(--status-caution)"
+            fillOpacity={0.1}
+            stroke="var(--status-caution)"
+            strokeWidth={1.5}
+            strokeDasharray="9 7"
+            opacity={0.8}
+          />
+        </g>
+      )}
+
+      {/* Routes the AI took out of service. */}
+      {reached.coordinate &&
+        blockedRoutes.map((route) => {
+          const [bx, by] = route.points[Math.floor(route.points.length / 2)];
+          return (
+            <g key={route.id}>
+              <path
+                d={routePath(route)}
+                fill="none"
+                stroke="var(--status-critical)"
+                strokeWidth={2.5}
+                strokeDasharray="6 6"
+                strokeLinecap="round"
+                opacity={0.75}
+              />
+              <g stroke="var(--status-critical)" strokeWidth={2.5} strokeLinecap="round">
+                <line x1={bx - 7} y1={by - 7} x2={bx + 7} y2={by + 7} />
+                <line x1={bx - 7} y1={by + 7} x2={bx + 7} y2={by - 7} />
+              </g>
+            </g>
+          );
+        })}
+
+      {/* Safe routes draw themselves on when the AI settles on them. */}
+      {reached.route &&
+        safeRoutes.map((route) => {
+          const d = routePath(route);
+          const [ex, ey] = route.points[route.points.length - 1];
+          return (
+            <g key={route.id}>
+              <path
+                d={d}
+                fill="none"
+                stroke="var(--status-normal)"
+                strokeWidth={7}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity={0.14}
+                pathLength={1}
+                strokeDasharray={1}
+                className="animate-draw"
+              />
+              <path
+                d={d}
+                fill="none"
+                stroke="var(--status-normal)"
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                pathLength={1}
+                strokeDasharray={1}
+                className="animate-draw"
+              />
+              {/* People moving along it, once their positions are known. */}
+              {reached.crowd &&
+                ["0s", "1.4s"].map((begin) => (
+                  <circle key={begin} r={4} fill="var(--status-normal)">
+                    <animateMotion
+                      dur="2.8s"
+                      begin={begin}
+                      repeatCount="indefinite"
+                      path={d}
+                    />
+                  </circle>
+                ))}
+              {/* Assembly point at the end of the route. */}
+              <circle
+                cx={ex}
+                cy={ey}
+                r={6}
+                fill="none"
+                stroke="var(--status-normal)"
+                strokeWidth={2}
+                className="animate-pulse-soft"
+              />
+            </g>
+          );
+        })}
+    </g>
+  );
+}
+
+function FireMarker({ shape }: { shape: BuildingShape }) {
+  const { x, y } = firePoint(shape);
+  return (
+    <g className="pointer-events-none" style={{ color: "var(--status-critical)" }}>
+      {[0, 1].map((i) => (
+        <circle key={i} cx={x} cy={y} r={8} fill="none" stroke="currentColor" strokeWidth={1.5}>
+          <animate
+            attributeName="r"
+            from="8"
+            to="30"
+            dur="2.2s"
+            begin={`${i * 1.1}s`}
+            repeatCount="indefinite"
+          />
+          <animate
+            attributeName="opacity"
+            from="0.7"
+            to="0"
+            dur="2.2s"
+            begin={`${i * 1.1}s`}
+            repeatCount="indefinite"
+          />
+        </circle>
+      ))}
+      {/* The roof it sits on is already critical red, so the glyph needs a
+          dark disc behind it to stay legible. */}
+      <circle cx={x} cy={y} r={11} fill="var(--color-background)" opacity={0.9} />
+      <circle
+        cx={x}
+        cy={y}
+        r={11}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        opacity={0.9}
+      />
+      {/* Flame glyph. */}
+      <path
+        d={`M ${x} ${y - 9} C ${x + 6} ${y - 3} ${x + 5} ${y + 1} ${x + 3} ${y + 4}
+            C ${x + 2} ${y + 1} ${x + 1} ${y} ${x} ${y - 1}
+            C ${x - 1} ${y + 1} ${x - 3} ${y + 2} ${x - 3} ${y + 4}
+            C ${x - 6} ${y} ${x - 5} ${y - 4} ${x} ${y - 9} Z`}
+        fill="currentColor"
+        className="animate-pulse-soft"
+      />
+    </g>
   );
 }
 
@@ -203,11 +404,21 @@ interface BuildingNodeProps {
   building: BuildingState;
   selected: boolean;
   focused: boolean;
+  /** The building the fire is in — it reads CRITICAL whatever its crowd says. */
+  onFire?: boolean;
   onSelect: () => void;
 }
 
-function BuildingNode({ building, selected, focused, onSelect }: BuildingNodeProps) {
-  const tone = statusTone(building.status);
+function BuildingNode({
+  building,
+  selected,
+  focused,
+  onFire = false,
+  onSelect,
+}: BuildingNodeProps) {
+  // Crowd is the only thing the status scale measures, and an evacuated
+  // building is empty — so during a fire the box keeps its own colour.
+  const tone = statusTone(onFire ? "critical" : building.status);
   const { shape } = building;
   const labelY = shape.y - shape.d - shape.h - 16;
 
