@@ -4,12 +4,11 @@
 
 ## Current Goal
 
-Phase 5 완료. **커밋하지 않았다.** 사이드바에 "준비중"은 하나도 남지 않았고,
-`ComingSoon`을 쓰는 페이지도 없다.
+Phase 5 완료. `a9cad41`(구현) · `3007838`(문서)로 커밋했고 origin/main에 푸시됐다.
+사이드바에 "준비중"은 하나도 남지 않았고, `ComingSoon`을 쓰는 페이지도 없다.
 
-다음은 **Phase 6** — Landing 스크롤 내러티브, 반응형·애니메이션 다듬기.
-`EVENT`(행사)는 여전히 `available: false` 스텁이다. 손대려면 Phase 5와 같은 순서
-(시나리오 타임라인 → 페이지 → 리포트)로 가면 된다.
+다음은 **Phase 6(Polish)** — 명세에 남은 마지막 단계다. 할 일은 Pending Tasks에 순서대로 적어 두었다.
+`EVENT`(행사)는 여전히 `available: false` 스텁이고, 명세의 Phase 목록에는 없는 선택 항목이다.
 
 ## Fixed Decisions
 
@@ -134,9 +133,35 @@ Phase 5 완료. **커밋하지 않았다.** 사이드바에 "준비중"은 하�
 
 ## Pending Tasks
 
-1. **Phase 6** — Landing 완성(Problem → Perception → Prediction → Decision → Physical Action →
-   Use Cases → SafeFlow → CTA 스크롤 섹션), 반응형·애니메이션 다듬기.
-2. 선택 — 행사(졸업작품전) 시나리오. Phase 5와 같은 순서로 가면 된다.
+**Phase 6 (Polish) — 명세의 마지막 단계.** 아래 순서대로 가면 된다.
+
+1. **Landing 완성** — 실질적으로 유일하게 새로 "만드는" 일이다.
+   지금 `src/app/page.tsx`는 Hero / 4단계 파이프라인 / CTA만 있다. 명세가 요구하는 스크롤 섹션
+   8개가 통째로 비어 있다: Problem → Perception → Prediction → Decision → Physical Action →
+   Use Cases → **SafeFlow** → CTA.
+   - 설명문을 늘어놓지 말 것. 큰 타이포그래피와 시각 연출 중심(명세 Landing 절).
+   - 이제 SafeFlow가 있으니 Physical Action / SafeFlow 섹션은 대시보드의 실제 장치를 재사용할 수 있다
+     (`CampusMap`, `SignageScreen`, AI Action 카드). 랜딩용으로 숫자를 새로 적지 말고
+     `src/data/`에서 끌어올 것.
+   - Hero 버튼 2개는 이미 있다: [Explore CampusBrain] [View Simulation].
+   - 스크롤 연출도 CSS만. `prefers-reduced-motion`을 반드시 존중할 것.
+
+2. **반응형 점검** — 데스크톱 우선으로 만들어 `xl:` 기준 레이아웃이 대부분이고,
+   태블릿·모바일 폭에서는 **한 번도 확인하지 않았다.** 확인할 곳:
+   KPI 6칸 / 사이니지 12장 / 로봇 14장 + 필터 칩 / SafeFlow 6단계 그리드 / 대피 경로 행 /
+   Topbar(배지·시나리오 선택기·재생 컨트롤이 한 줄에 안 들어간다) / 사이드바.
+
+3. **데모 흐름 최종 검증** — 조각별로는 다 확인했지만 **끊김 없이 한 번에 통과시켜 본 적이 없다.**
+   소개 → Dashboard → 공학관 선택 → 혼잡 시뮬 → AI 예측 → 물리 제어 → 비상 시뮬 → SafeFlow →
+   AI 리포트에서 대응 기록 확인. 명세 목표는 발표자가 2~3분 안에 직접 조작하는 것이다.
+
+4. **잔여 이슈 정리** (전부 작다, 상세는 Known Issues)
+   - 맵 건물 옆면 경계선의 클릭 사각지대 → 투명 히트 영역 폴리곤
+   - 미사용이 된 `coming-soon.tsx` → 행사 페이지를 안 만들 거면 삭제
+   - 마지막에 `npm run typecheck` / `lint` / `build` 3종 재확인
+
+**선택 — 행사(졸업작품전) 시나리오.** 명세 Phase 목록에는 없다. 넣는다면 Phase 5와 같은 순서
+(타임라인 → 필요하면 페이지 → 리포트)지만, 새 페이지 없이 기존 화면들이 그대로 반응한다.
 
 ## Last Session Summary
 
@@ -155,4 +180,4 @@ Phase 5(Emergency / SafeFlow)를 계획 승인 후 세 단계로 나눠 만들�
 `tsc --noEmit`, `npm run lint`, `npm run build` 모두 통과.
 비상 시나리오를 개요·사이니지·로봇·리포트·트윈·비상 페이지에서 끝까지 재생해 확인했고,
 혼잡 시나리오도 다시 완주시켜 리포트가 3건 / 91%→68%로 그대로인지 확인했다(SafeFlow 블록은 안 나온다).
-**커밋하지 않았다.**
+`a9cad41` feat / `3007838` docs로 커밋하고 origin/main에 푸시했다.
