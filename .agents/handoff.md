@@ -4,8 +4,11 @@
 
 ## Current Goal
 
-Phase 4 완료. 다음은 **Phase 5** — Emergency / SafeFlow 6단계.
+Phase 4 완료(`b5d686d`로 푸시됨). 다음은 **Phase 5** — Emergency / SafeFlow 6단계.
 사이드바에서 "준비중"이 남은 메뉴는 비상 대응 하나뿐이다.
+
+Phase 4와 달리 **데이터·파생 로직이 준비돼 있지 않다.** 시나리오 타임라인부터 직접 짜야 한다.
+자세한 건 Pending Tasks 1번.
 
 ## Fixed Decisions
 
@@ -105,11 +108,28 @@ Phase 4 완료. 다음은 **Phase 5** — Emergency / SafeFlow 6단계.
 
 ## Pending Tasks
 
-1. **Phase 5** — Emergency / SafeFlow 6단계. 시나리오 스텁(`scenarios.ts`의 `EMERGENCY`)을 채우고
-   `available: true`로 바꾼 뒤 `/dashboard/emergency`를 만든다. ComingSoon을 쓰는 마지막 페이지다.
-   - `SignageKind`에 `evacuation`이 이미 있고 `signageTone`도 CRITICAL로 매핑돼 있다.
-   - `AiActionKind`의 `door` / `broadcast`도 라벨까지 준비돼 있다(`AI_ACTION_KIND_LABEL`).
-   - 리포트 카드는 `buildScenarioReport`를 그대로 쓰되 SafeFlow 수치를 덧붙여야 한다.
+1. **Phase 5** — Emergency / SafeFlow. 명세의 핵심 데모이고, ComingSoon을 쓰는 마지막 페이지다.
+
+   **Phase 4와 다른 점 — 데이터·파생 로직이 준비돼 있지 않다.** Phase 4는 세션 2가 깔아 둔
+   `crowdTrend` · `SignageState` · `report.ts` · 데이터 3종을 소비하기만 하면 됐지만,
+   `EMERGENCY`는 `durationSec: 0` · `keyframes: []`인 빈 스텁이다. 시나리오 타임라인부터 설계해야 한다.
+   맵의 대피경로도 `campus-map.tsx`에 새 레이어를 붙이는 작업이다. "페이지만 만들면 되는" 단계가 아니다.
+
+   순서: **시나리오 타임라인 → 페이지 → 리포트**.
+
+   - `scenarios.ts`의 `EMERGENCY`를 키프레임으로 채우고 `available: true`로 바꾼다.
+     `durationSec`이 0이면 선택기에서 비활성이고 `buildScenarioReport`도 null을 돌려준다.
+   - `/dashboard/emergency` — [Simulate Emergency] → 6단계(화재 감지 → 위험 구역 분석 →
+     인원 위치 분석 → 안전 경로 산출 → 물리 시스템 연동 → 대응 활성화).
+   - Digital Twin에 화재 위치 / 위험 구역 / 차단 경로 / 안전 대피경로(드로잉 애니메이션).
+     기존 유입 흐름 곡선(`flowFromBuildingId`)이 선을 그리는 방식을 참고할 것.
+   - AI Action 카드 5종, 종료 요약(인원 유도 / 회피한 고위험 경로 / 대피 개선율)에는 `SimulatedTag`.
+   - AI 리포트의 실행 리포트에 SafeFlow 수치를 덧붙인다. `buildScenarioReport`는 그대로 쓴다.
+
+   이미 깔려 있으니 새로 만들지 말 것:
+   - `SignageKind`의 `evacuation`, `signageTone`이 CRITICAL로 매핑.
+   - `AiActionKind`의 `door` / `broadcast`, 라벨은 `AI_ACTION_KIND_LABEL`.
+   - `ActivityCategory`의 `emergency`, `CATEGORY_LABEL`에 "비상"으로 들어가 있다.
 2. Phase 6 — Landing 완성, 반응형·애니메이션 다듬기.
 
 ## Last Session Summary
