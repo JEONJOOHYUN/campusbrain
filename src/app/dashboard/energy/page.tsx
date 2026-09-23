@@ -1,14 +1,22 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/dashboard/coming-soon";
+import { EnergyActions } from "@/components/energy/energy-actions";
+import { EnergyBuildings } from "@/components/energy/energy-buildings";
+import { EnergySummary } from "@/components/energy/energy-summary";
+import { EnergySystems } from "@/components/energy/energy-systems";
 
 export const metadata: Metadata = { title: "에너지 — CampusBrain" };
 
-export default function Page() {
+export default function EnergyPage() {
   return (
-    <ComingSoon
-      title="에너지"
-      description="건물별 전력·냉난방·조명 사용량과 AI 자동 제어에 따른 예상 절감량을 보여줍니다."
-      phase="4단계 · Physical AI 기능"
-    />
+    <div className="space-y-4">
+      <EnergySummary />
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
+        <EnergyBuildings />
+        <EnergySystems />
+      </div>
+
+      <EnergyActions />
+    </div>
   );
 }

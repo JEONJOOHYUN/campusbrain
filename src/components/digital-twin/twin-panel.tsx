@@ -15,9 +15,14 @@ const LEGEND = [
 export function TwinPanel({
   className,
   tall = false,
+  title = "디지털 트윈",
+  description = "건물을 클릭하면 상세 정보와 AI 판단을 볼 수 있습니다.",
 }: {
   className?: string;
   tall?: boolean;
+  /** Overridden where the same map answers a different question. */
+  title?: string;
+  description?: string;
 }) {
   const { state } = useSimulation();
 
@@ -25,10 +30,8 @@ export function TwinPanel({
     <Card className={cn("overflow-hidden", className)}>
       <CardHeader className="pb-0">
         <div>
-          <CardTitle>디지털 트윈</CardTitle>
-          <p className="mt-0.5 text-xs text-muted">
-            건물을 클릭하면 상세 정보와 AI 판단을 볼 수 있습니다.
-          </p>
+          <CardTitle>{title}</CardTitle>
+          <p className="mt-0.5 text-xs text-muted">{description}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {LEGEND.map((item) => (

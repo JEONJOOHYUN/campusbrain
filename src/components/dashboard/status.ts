@@ -1,10 +1,16 @@
+import type { EnergySystem } from "@/data/energy";
+import { BATTERY_THRESHOLDS } from "@/data/robots";
+import type { BadgeTone } from "@/components/ui/badge";
 import type {
   ActivityCategory,
   ActivitySeverity,
   ActivityStage,
+  AiActionKind,
   BuildingStatus,
   CampusStatus,
   CrowdLevel,
+  RobotKind,
+  SignageKind,
 } from "@/types";
 
 export interface Tone {
@@ -48,6 +54,22 @@ const CALM: Tone = {
   css: "var(--color-cyan)",
 };
 
+const INFO: Tone = {
+  text: "text-primary",
+  bg: "bg-primary/10",
+  border: "border-primary/40",
+  dot: "bg-primary",
+  css: "var(--color-primary)",
+};
+
+const ACCENT: Tone = {
+  text: "text-ai",
+  bg: "bg-ai/10",
+  border: "border-ai/40",
+  dot: "bg-ai",
+  css: "var(--color-ai)",
+};
+
 export function statusTone(status: CampusStatus | BuildingStatus): Tone {
   switch (status) {
     case "CRITICAL":
@@ -74,11 +96,88 @@ export function crowdTone(level: CrowdLevel): Tone {
   }
 }
 
+/**
+ * What a display is showing, not how urgent the campus is — but the two
+ * scales meet at the top: an evacuation sign is a CRITICAL sign.
+ */
+export function signageTone(kind: SignageKind): Tone {
+  switch (kind) {
+    case "evacuation":
+      return CRITICAL;
+    case "alert":
+      return CAUTION;
+    case "wayfinding":
+      return INFO;
+    case "event":
+      return ACCENT;
+    default:
+      return CALM;
+  }
+}
+
+export const SIGNAGE_KIND_LABEL: Record<SignageKind, string> = {
+  welcome: "환영",
+  event: "행사 안내",
+  wayfinding: "길 안내",
+  alert: "경고",
+  evacuation: "대피",
+};
+
 export function severityTone(severity: ActivitySeverity): Tone {
   if (severity === "critical") return CRITICAL;
   if (severity === "warning") return CAUTION;
   return NORMAL;
 }
+
+/**
+ * Which system is drawing the power. Categories, not severities — so they
+ * deliberately avoid the amber/red the status scale owns.
+ */
+export function energySystemTone(system: EnergySystem): Tone {
+  switch (system) {
+    case "hvac":
+      return INFO;
+    case "lighting":
+      return CALM;
+    default:
+      return ACCENT;
+  }
+}
+
+export const ENERGY_SYSTEM_LABEL: Record<EnergySystem, string> = {
+  hvac: "냉난방",
+  lighting: "조명",
+  equipment: "장비",
+};
+
+/** Remaining charge, not campus health — but they read on the same scale. */
+export function batteryTone(battery: number): Tone {
+  if (battery >= BATTERY_THRESHOLDS.ok) return NORMAL;
+  if (battery >= BATTERY_THRESHOLDS.low) return CAUTION;
+  return CRITICAL;
+}
+
+/** What a robot is for. Kinds are categories, so they borrow no status colour. */
+export const ROBOT_KIND_LABEL: Record<RobotKind, string> = {
+  cleaning: "청소",
+  guide: "안내",
+  delivery: "배송",
+  security: "보안",
+};
+
+export const ROBOT_KIND_BADGE: Record<RobotKind, BadgeTone> = {
+  cleaning: "cyan",
+  guide: "primary",
+  delivery: "ai",
+  security: "neutral",
+};
+
+export const CROWD_LEVEL_BADGE: Record<CrowdLevel, BadgeTone> = {
+  low: "cyan",
+  moderate: "success",
+  high: "warning",
+  critical: "danger",
+};
 
 export const CROWD_LEVEL_LABEL: Record<CrowdLevel, string> = {
   low: "LOW",
@@ -91,6 +190,16 @@ export const BUILDING_STATUS_LABEL: Record<BuildingStatus, string> = {
   normal: "NORMAL",
   caution: "CAUTION",
   critical: "CRITICAL",
+};
+
+/** Which physical system an AI action reached for. */
+export const AI_ACTION_KIND_LABEL: Record<AiActionKind, string> = {
+  signage: "사이니지",
+  elevator: "엘리베이터",
+  robot: "로봇",
+  door: "출입문",
+  hvac: "냉난방",
+  broadcast: "방송",
 };
 
 export const CATEGORY_LABEL: Record<ActivityCategory, string> = {

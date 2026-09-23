@@ -60,7 +60,7 @@ export function RecentActivityCard({
   );
 }
 
-function ActivityRow({
+export function ActivityRow({
   entry,
   isFirst,
   isLast,

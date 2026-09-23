@@ -1,9 +1,16 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-type Tone = "neutral" | "primary" | "ai" | "cyan" | "success" | "warning" | "danger";
+export type BadgeTone =
+  | "neutral"
+  | "primary"
+  | "ai"
+  | "cyan"
+  | "success"
+  | "warning"
+  | "danger";
 
-const TONES: Record<Tone, string> = {
+const TONES: Record<BadgeTone, string> = {
   neutral: "border-line bg-white/5 text-muted",
   primary: "border-primary/40 bg-primary/10 text-primary",
   ai: "border-ai/40 bg-ai/10 text-ai",
@@ -14,7 +21,7 @@ const TONES: Record<Tone, string> = {
 };
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  tone?: Tone;
+  tone?: BadgeTone;
   /** Mono + tabular numerals, for status codes and readings. */
   mono?: boolean;
 }

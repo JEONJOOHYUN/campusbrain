@@ -145,3 +145,14 @@ export const ROBOTS: RobotBase[] = [
     charging: true,
   },
 ];
+
+/**
+ * Battery bands the fleet view colours by. One place, so a card, a bar and
+ * a "충전 필요" warning can never disagree about what 31% means.
+ */
+export const BATTERY_THRESHOLDS = {
+  /** At or above this the battery is healthy. */
+  ok: 60,
+  /** At or above this it is getting low; below it, critical. */
+  low: 30,
+} as const;

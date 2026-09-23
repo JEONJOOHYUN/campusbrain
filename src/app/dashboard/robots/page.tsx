@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
-import { ComingSoon } from "@/components/dashboard/coming-soon";
+import { RobotDeployment } from "@/components/robots/robot-deployment";
+import { RobotFleet } from "@/components/robots/robot-fleet";
+import { RobotSummary } from "@/components/robots/robot-summary";
 
 export const metadata: Metadata = { title: "로봇 관제 — CampusBrain" };
 
-export default function Page() {
+export default function RobotsPage() {
   return (
-    <ComingSoon
-      title="로봇 관제"
-      description="청소 / 안내 / 배송 / 보안 로봇의 위치·배터리·작업 상태를 시나리오에 맞춰 보여줍니다."
-      phase="4단계 · Physical AI 기능"
-    />
+    <div className="space-y-4">
+      <RobotSummary />
+      <RobotDeployment />
+      <RobotFleet />
+    </div>
   );
 }
