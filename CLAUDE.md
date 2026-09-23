@@ -35,8 +35,15 @@ Physical AI 스마트 캠퍼스 인터랙티브 프로토타입.
   대시보드는 매 렌더마다 `?scenario=`를 읽는다.
 - 대시보드 레이아웃을 `<Suspense>`로 감싸지 말 것.
   `useSearchParams`와 겹치면 직접 로드 시 하이드레이션이 멈춘다(2026-09-23 확인).
+- 같은 이유로 `src/app/dashboard/` 아래에 `loading.tsx`를 두지 말 것.
+  route 단위 Suspense 경계가 생기고, 레이아웃의 `useSearchParams`와 겹쳐
+  **8개 페이지 전부가 직접 로드 시 스켈레톤에서 멈춘다**(2026-09-23 확인, dev/prod 동일).
+  대시보드는 서버 데이터 페칭이 없고 프로바이더에서 즉시 파생되므로 로딩 구간 자체가 없다.
+- `<Link>` 안에 `<Button>`을 넣지 말 것. `<a>` 안의 `<button>`은 잘못된 마크업이다.
+  링크를 버튼처럼 보이게 하려면 `buttonClasses()`를 `<Link className={...}>`에 쓴다.
 
 ## 검증
 
 `npm run typecheck`, `npm run lint`, `npm run build` 세 개를 모두 통과시키고,
 브라우저에서 Milestone 흐름을 직접 클릭해 확인한다.
+데모 흐름: 소개 → Dashboard → 공학관 선택 → 혼잡 시뮬 → 비상 시뮬 → SafeFlow → AI 리포트.
