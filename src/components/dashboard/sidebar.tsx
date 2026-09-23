@@ -16,7 +16,7 @@ export function Sidebar() {
   const withScenario = (href: string) => `${href}?scenario=${state.scenario}`;
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-line bg-surface">
+    <aside className="hidden w-64 shrink-0 flex-col border-r border-line bg-surface lg:flex">
       <Link
         href="/"
         className="flex items-center gap-2.5 border-b border-line px-5 py-4 transition-colors hover:bg-white/5"

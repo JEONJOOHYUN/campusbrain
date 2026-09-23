@@ -5,13 +5,13 @@ import { useSimulation } from "@/components/simulation/simulation-provider";
 import { formatDuration } from "@/lib/simulation/clock";
 import { cn } from "@/lib/utils";
 
-export function PlaybackControls() {
+export function PlaybackControls({ className }: { className?: string }) {
   const { state, isPlaying, toggle, reset } = useSimulation();
   const { definition, elapsed, duration, progress, clock } = state;
   const disabled = duration <= 0;
 
   return (
-    <div className="flex items-center gap-3">
+    <div className={cn("flex items-center gap-2.5 sm:gap-3", className)}>
       <div className="flex items-center gap-1">
         <button
           type="button"
@@ -54,7 +54,7 @@ export function PlaybackControls() {
 
       <div className="tnum flex items-baseline gap-2 text-xs">
         <span className="font-semibold text-fg">{clock}</span>
-        <span className="text-muted">
+        <span className="hidden text-muted sm:inline">
           {formatDuration(elapsed, definition.timeScale)} /{" "}
           {formatDuration(duration, definition.timeScale)}
         </span>

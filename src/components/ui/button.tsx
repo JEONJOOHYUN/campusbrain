@@ -19,6 +19,29 @@ const SIZES: Record<Size, string> = {
   lg: "h-12 px-6 text-base gap-2.5",
 };
 
+/**
+ * The button's look, on its own. Use it on a Link or an anchor — never nest a
+ * <button> inside <a>: that is invalid markup and the browser drops the
+ * navigation, leaving a button that appears to work and does nothing.
+ */
+export function buttonClasses({
+  variant = "primary",
+  size = "md",
+  className,
+}: {
+  variant?: Variant;
+  size?: Size;
+  className?: string;
+} = {}) {
+  return cn(
+    "inline-flex items-center justify-center rounded-lg font-medium transition-colors",
+    "disabled:pointer-events-none disabled:opacity-45",
+    VARIANTS[variant],
+    SIZES[size],
+    className,
+  );
+}
+
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
@@ -34,13 +57,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={cn(
-        "inline-flex items-center justify-center rounded-lg font-medium transition-colors",
-        "disabled:pointer-events-none disabled:opacity-45",
-        VARIANTS[variant],
-        SIZES[size],
-        className,
-      )}
+      className={buttonClasses({ variant, size, className })}
       {...props}
     />
   );

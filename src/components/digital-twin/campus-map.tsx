@@ -4,7 +4,13 @@ import { useId } from "react";
 import { useSimulation } from "@/components/simulation/simulation-provider";
 import { statusTone } from "@/components/dashboard/status";
 import { deriveSafeFlow, type SafeFlowSnapshot } from "@/lib/simulation/safeflow";
-import type { BuildingShape, BuildingState, SafeFlowRoute } from "@/types";
+import type {
+  BuildingId,
+  BuildingShape,
+  BuildingState,
+  SafeFlowRoute,
+  SimulationState,
+} from "@/types";
 import { cn } from "@/lib/utils";
 
 const VIEW_W = 960;
@@ -18,6 +24,23 @@ function groundPoints({ x, y, w, d }: BuildingShape, lift = 0): string {
     `${x + w},${y - lift}`,
     `${x},${y + d - lift}`,
     `${x - w},${y - lift}`,
+  ].join(" ");
+}
+
+/**
+ * Outline of the whole extruded box — the top diamond's back three corners,
+ * then down the visible verticals to the ground diamond's front three. Used
+ * as an invisible hit target so the seam between the two side faces is not a
+ * dead strip under the cursor.
+ */
+function silhouettePoints({ x, y, w, d, h }: BuildingShape): string {
+  return [
+    `${x - w},${y - h}`,
+    `${x},${y - d - h}`,
+    `${x + w},${y - h}`,
+    `${x + w},${y}`,
+    `${x},${y + d}`,
+    `${x - w},${y}`,
   ].join(" ");
 }
 
@@ -116,12 +139,48 @@ function GroundGrid({ opacity = 0.28 }: { opacity?: number }) {
   );
 }
 
-interface CampusMapProps {
+interface CampusMapViewProps {
+  state: SimulationState;
+  selectedBuildingId: BuildingId | null;
+  onSelectBuilding: (id: BuildingId) => void;
+  /** Drives the repeating flow motion; a frozen snapshot passes false. */
+  isPlaying: boolean;
   className?: string;
+  /** Landing snapshots are illustration — nothing opens when a box is hit. */
+  interactive?: boolean;
 }
 
-export function CampusMap({ className }: CampusMapProps) {
+/**
+ * The Digital Twin as the dashboard uses it: wired to the simulation
+ * provider, clickable, opening the building detail panel.
+ */
+export function CampusMap({ className }: { className?: string }) {
   const { state, selectedBuildingId, selectBuilding, isPlaying } = useSimulation();
+
+  return (
+    <CampusMapView
+      state={state}
+      selectedBuildingId={selectedBuildingId}
+      onSelectBuilding={selectBuilding}
+      isPlaying={isPlaying}
+      className={className}
+    />
+  );
+}
+
+/**
+ * Presentational map. Takes a simulation snapshot instead of reading the
+ * provider, so the landing page can render a frozen moment of a scenario
+ * without mounting playback or writing ?scenario= into the URL.
+ */
+export function CampusMapView({
+  state,
+  selectedBuildingId,
+  onSelectBuilding,
+  isPlaying,
+  className,
+  interactive = true,
+}: CampusMapViewProps) {
   const uid = useId().replace(/:/g, "");
 
   // Painter's algorithm: back rows first, so closer buildings overlap.
@@ -145,7 +204,11 @@ export function CampusMap({ className }: CampusMapProps) {
         viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
         className="h-full w-full"
         role="group"
-        aria-label="캠퍼스 디지털 트윈 — 건물을 클릭하면 상세 정보가 열립니다"
+        aria-label={
+          interactive
+            ? "캠퍼스 디지털 트윈 — 건물을 클릭하면 상세 정보가 열립니다"
+            : "캠퍼스 디지털 트윈"
+        }
       >
         <defs>
           <radialGradient id={`${uid}-glow`} cx="50%" cy="46%" r="62%">
@@ -229,7 +292,8 @@ export function CampusMap({ className }: CampusMapProps) {
             selected={selectedBuildingId === b.id}
             focused={focusId === b.id}
             onFire={fireBuilding?.id === b.id}
-            onSelect={() => selectBuilding(b.id)}
+            interactive={interactive}
+            onSelect={() => onSelectBuilding(b.id)}
           />
         ))}
 
@@ -406,6 +470,8 @@ interface BuildingNodeProps {
   focused: boolean;
   /** The building the fire is in — it reads CRITICAL whatever its crowd says. */
   onFire?: boolean;
+  /** False on a decorative snapshot: no button role, no pointer, no focus. */
+  interactive?: boolean;
   onSelect: () => void;
 }
 
@@ -414,6 +480,7 @@ function BuildingNode({
   selected,
   focused,
   onFire = false,
+  interactive = true,
   onSelect,
 }: BuildingNodeProps) {
   // Crowd is the only thing the status scale measures, and an evacuated
@@ -424,19 +491,30 @@ function BuildingNode({
 
   return (
     <g
-      role="button"
-      tabIndex={0}
-      aria-label={`${building.name}, 혼잡도 ${building.crowd}퍼센트, 상태 ${building.status}`}
-      onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
-      className="cursor-pointer outline-none [&:focus-visible>.bl-hit]:stroke-primary [&:hover>.bl-top]:brightness-125"
+      {...(interactive
+        ? {
+            role: "button",
+            tabIndex: 0,
+            "aria-label": `${building.name}, 혼잡도 ${building.crowd}퍼센트, 상태 ${building.status}`,
+            onClick: onSelect,
+            onKeyDown: (e: React.KeyboardEvent<SVGGElement>) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelect();
+              }
+            },
+          }
+        : { "aria-hidden": true })}
+      className={cn(
+        "outline-none [&:focus-visible>.bl-hit]:stroke-primary",
+        interactive && "cursor-pointer [&:hover>.bl-top]:brightness-125",
+      )}
       style={{ color: tone.css }}
     >
+      {/* Invisible silhouette, drawn first so it covers the seams between the
+          faces without painting anything of its own. */}
+      <polygon points={silhouettePoints(shape)} fill="none" pointerEvents="all" />
+
       {/* Footprint glow on the ground. */}
       <polygon
         points={groundPoints(shape)}

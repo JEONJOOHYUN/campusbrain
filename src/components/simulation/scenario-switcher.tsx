@@ -25,7 +25,7 @@ export function ScenarioSwitcher() {
             title={def.available ? def.headline : "준비 중"}
             onClick={() => setScenario(id)}
             className={cn(
-              "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+              "rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors sm:px-3",
               active
                 ? "bg-primary/15 text-primary"
                 : "text-muted hover:text-fg enabled:hover:bg-white/5",

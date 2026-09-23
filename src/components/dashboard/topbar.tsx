@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { IconBrain } from "@/components/icons";
+import { MobileNav } from "@/components/dashboard/mobile-nav";
 import { NAV_ITEMS } from "@/components/dashboard/nav-items";
 import { PlaybackControls } from "@/components/simulation/playback-controls";
 import { ScenarioSwitcher } from "@/components/simulation/scenario-switcher";
@@ -23,17 +26,32 @@ export function Topbar() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-background/85 backdrop-blur">
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-3 px-6 py-3">
-        <div className="min-w-0">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5 px-4 py-3 sm:px-6">
+        {/* The sidebar carries the brand on wide screens; below lg this is
+            the only way back to the landing page. */}
+        <Link
+          href="/"
+          aria-label="CampusBrain 홈"
+          className="shrink-0 text-primary transition-colors hover:text-fg lg:hidden"
+        >
+          <IconBrain width={20} height={20} />
+        </Link>
+
+        <div className="min-w-0 flex-1 lg:flex-none">
           <h1 className="truncate text-base font-bold tracking-tight text-fg">
             {current.label}
           </h1>
-          <p className="truncate text-xs text-muted">{state.definition.headline}</p>
+          {/* The switcher below already names the scenario on a phone. */}
+          <p className="hidden truncate text-xs text-muted sm:block">
+            {state.definition.headline}
+          </p>
         </div>
+
+        <SimulationModeBadge />
 
         <div
           className={cn(
-            "flex items-center gap-2 rounded-md border px-2.5 py-1",
+            "flex shrink-0 items-center gap-2 rounded-md border px-2.5 py-1",
             tone.border,
             tone.bg,
           )}
@@ -44,12 +62,15 @@ export function Topbar() {
           </span>
         </div>
 
-        <div className="ml-auto flex flex-wrap items-center gap-3">
-          <SimulationModeBadge />
+        {/* Own row below lg: the badge, the switcher and the transport will
+            not share a line with the page title on a phone. */}
+        <div className="flex w-full items-center gap-x-3 lg:ml-auto lg:w-auto">
           <ScenarioSwitcher />
-          <PlaybackControls />
+          <PlaybackControls className="ml-auto lg:ml-0" />
         </div>
       </div>
+
+      <MobileNav />
     </header>
   );
 }
