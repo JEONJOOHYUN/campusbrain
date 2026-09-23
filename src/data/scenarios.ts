@@ -372,21 +372,395 @@ const CROWD: ScenarioDefinition = {
   ],
 };
 
-/** Stubs — the switcher shows them, disabled, until they are built. */
+/**
+ * The graduation exhibition. Unlike the crowd scenario this inflow is
+ * planned — the AI is not suppressing a spike, it is deciding where a
+ * known crowd should walk. Visitors park and head for the exhibition on
+ * the 3rd floor of Engineering Hall; left alone they all funnel through
+ * the Student Center plaza, so the AI splits the stream across the
+ * central walkway and puts the two idle guide robots on the route.
+ *
+ * The campus ends the run at CAUTION, not NORMAL. An exhibition day is
+ * busy by definition; what the AI removed was the concentration, not the
+ * visitors — and the third busy building at the end (Main Hall) is busy
+ * *because* the AI routed people through it.
+ */
 const EVENT: ScenarioDefinition = {
   id: "event",
   label: "행사",
-  headline: "졸업작품전",
-  description: "졸업작품전 시나리오는 다음 단계에서 구현됩니다.",
-  durationSec: 0,
+  headline: "졸업작품전 — 방문객 동선 분산",
+  description:
+    "졸업작품전에 외부 방문객이 들어옵니다. AI가 방문객 동선을 예측해 행사 안내 사이니지를 바꾸고, 혼잡 구역을 우회시키고, 안내로봇을 투입합니다.",
+  durationSec: 60,
   timeScale: 10,
   clockStart: "14:30",
-  focusBuildingId: null,
-  flowFromBuildingId: null,
-  insight: null,
+  focusBuildingId: "student-center",
+  // Visitors arrive by car, so the map draws the inbound stream from the
+  // parking area towards the plaza the AI is trying to keep clear.
+  flowFromBuildingId: "parking",
+  available: true,
   safeflow: null,
-  keyframes: [],
-  available: false,
+  insight: {
+    id: "insight-event-student-center",
+    buildingId: "student-center",
+    title: "졸업작품전 방문객 동선 집중",
+    summary:
+      "주차장에서 전시장으로 향하는 방문객이 학생회관 광장 한 곳으로 몰리고 있습니다. 현재 유입 속도면 광장 혼잡이 88%에 이릅니다.",
+    prediction: 88,
+    horizonMin: 10,
+    confidence: 92,
+    recommendation: "방문객 동선 일부를 중앙 보행로로 분산하고 전시장 안내를 사이니지로 바꾸세요.",
+    severity: "warning",
+    appearsAt: 12,
+    resolvesAt: 48,
+    resolution:
+      "광장 혼잡이 88%에서 꺾였습니다. 중앙 보행로가 열린 뒤 방문객이 두 경로로 나뉘어 들어오고 있습니다.",
+    steps: [
+      {
+        stage: "observe",
+        label: "방문객 유입 감지",
+        detail: "주차장 → 학생회관 광장 · 분당 +26명",
+        t: 6,
+      },
+      {
+        stage: "predict",
+        label: "10분 후 광장 88% 예측",
+        detail: "졸업작품전 개장 · 신뢰도 92%",
+        t: 12,
+      },
+      {
+        stage: "decide",
+        label: "방문객 동선 분산 계획 선택",
+        detail: "중앙 보행로 우회 · 안내로봇 · 전시장 엘리베이터",
+        t: 18,
+      },
+      {
+        stage: "act",
+        label: "물리 시스템 4종 작동",
+        detail: "사이니지 2 · 안내로봇 2대 · 엘리베이터",
+        t: 39,
+      },
+    ],
+  },
+  keyframes: [
+    {
+      t: -30,
+      log: {
+        category: "signage",
+        stage: "act",
+        severity: "info",
+        title: "졸업작품전 안내 사이니지 사전 배포",
+        location: "캠퍼스 전체",
+        target: "디스플레이 12대",
+      },
+    },
+    {
+      t: -22,
+      log: {
+        category: "robot",
+        stage: "decide",
+        severity: "info",
+        title: "안내로봇 전시장 순회 경로 사전 생성",
+        location: "공학관 3층 전시장",
+        target: "GDE-03",
+      },
+    },
+    {
+      t: -14,
+      log: {
+        category: "crowd",
+        stage: "observe",
+        severity: "info",
+        title: "외부 방문객 사전 등록 412명 확인",
+        location: "졸업작품전",
+      },
+    },
+    {
+      t: -6,
+      log: {
+        category: "energy",
+        stage: "act",
+        severity: "info",
+        title: "전시장 조명·환기 사전 가동",
+        location: "공학관 3층 전시장",
+      },
+    },
+    {
+      t: 0,
+      metrics: {
+        "student-center": { crowd: 71, temperature: 23.1, airQuality: 47 },
+        engineering: { crowd: 82, energy: 74 },
+        main: { crowd: 48 },
+        parking: { crowd: 26 },
+      },
+      log: {
+        category: "crowd",
+        stage: "observe",
+        severity: "info",
+        title: "졸업작품전 개장 — 방문객 입장 시작",
+        location: "공학관 3층 전시장",
+      },
+    },
+    {
+      t: 6,
+      metrics: {
+        "student-center": { crowd: 74 },
+        main: { crowd: 50 },
+        parking: { crowd: 38 },
+      },
+      log: {
+        category: "crowd",
+        stage: "observe",
+        severity: "info",
+        title: "AI Vision이 주차장발 방문객 흐름을 감지",
+        location: "학생회관 광장",
+        target: "분당 +26명",
+      },
+    },
+    {
+      t: 12,
+      metrics: {
+        "student-center": { crowd: 79, airQuality: 52 },
+        engineering: { crowd: 83 },
+        main: { crowd: 52 },
+        parking: { crowd: 47 },
+      },
+      log: {
+        category: "crowd",
+        stage: "predict",
+        severity: "warning",
+        title: "학생회관 광장 혼잡 예측 발생 — 10분 후 88%",
+        location: "학생회관 광장",
+        target: "신뢰도 92%",
+      },
+    },
+    {
+      t: 18,
+      metrics: {
+        "student-center": { crowd: 84 },
+        main: { crowd: 55 },
+        parking: { crowd: 54 },
+      },
+      log: {
+        category: "crowd",
+        stage: "decide",
+        severity: "warning",
+        title: "방문객 동선 분산 계획 선택",
+        location: "캠퍼스 전체",
+        target: "대응 4건",
+      },
+    },
+    {
+      t: 21,
+      metrics: {
+        "student-center": { crowd: 87 },
+        parking: { crowd: 57 },
+      },
+      action: {
+        id: "act-signage-event",
+        kind: "signage",
+        buildingId: "engineering",
+        label: "행사 안내 사이니지",
+        detail: "전시장 방면 · 디스플레이 3대 변경",
+      },
+      signage: {
+        ids: ["SGN-01", "SGN-03", "SGN-07"],
+        message: {
+          kind: "event",
+          headline: "졸업작품전 전시장",
+          sub: "공학관 3층 · 중앙 보행로 경유",
+          arrow: "right",
+        },
+        reason: "졸업작품전 방문객 동선 안내",
+      },
+      log: {
+        category: "signage",
+        stage: "act",
+        severity: "info",
+        title: "행사 안내 사이니지 활성화",
+        location: "본관 · 중앙 보행로 · 공학관",
+        target: "디스플레이 3대",
+      },
+    },
+    {
+      // The gate arm sees the visitors first, so it carries the parking
+      // instruction rather than the exhibition wayfinding.
+      t: 21,
+      signage: {
+        ids: ["SGN-12"],
+        message: {
+          kind: "wayfinding",
+          headline: "졸업작품전 방문객 주차",
+          sub: "B구역 · 전시장까지 도보 4분",
+          arrow: "right",
+        },
+        reason: "졸업작품전 방문객 동선 안내",
+      },
+    },
+    {
+      t: 24,
+      metrics: {
+        "student-center": { crowd: 88, temperature: 23.8, airQuality: 58 },
+        main: { crowd: 58 },
+        parking: { crowd: 60 },
+      },
+      log: {
+        category: "crowd",
+        stage: "observe",
+        severity: "warning",
+        title: "학생회관 광장 88% — 예측 피크 도달",
+        location: "학생회관 광장",
+      },
+    },
+    {
+      t: 27,
+      metrics: {
+        "student-center": { crowd: 85 },
+        main: { crowd: 63 },
+        parking: { crowd: 62 },
+      },
+      action: {
+        id: "act-signage-detour",
+        kind: "signage",
+        buildingId: "student-center",
+        label: "방문객 동선 우회",
+        detail: "광장 → 중앙 보행로",
+      },
+      signage: {
+        ids: ["SGN-09"],
+        message: {
+          kind: "wayfinding",
+          headline: "광장 혼잡 — 중앙 보행로 이용",
+          sub: "공학관 3층 전시장 방면",
+          arrow: "up",
+        },
+        reason: "학생회관 광장 88% 혼잡에 따른 방문객 동선 분산",
+      },
+      log: {
+        category: "signage",
+        stage: "act",
+        severity: "warning",
+        title: "학생회관 광장 우회 안내 활성화",
+        location: "학생회관 앞 광장",
+        target: "SGN-09",
+      },
+    },
+    {
+      t: 33,
+      metrics: {
+        "student-center": { crowd: 81 },
+        engineering: { crowd: 84, energy: 78 },
+        main: { crowd: 68 },
+        parking: { crowd: 63 },
+      },
+      action: {
+        id: "act-robot-guide-event",
+        kind: "robot",
+        buildingId: "engineering",
+        label: "안내로봇 2대 투입",
+        detail: "안내로봇 01 → 전시장 · 04 → 주차장 입구",
+      },
+      robot: {
+        id: "GDE-01",
+        buildingId: "engineering",
+        task: "전시장 방문객 안내",
+        location: "공학관 1층 로비",
+        status: "안내 중",
+      },
+      log: {
+        category: "robot",
+        stage: "act",
+        severity: "info",
+        title: "안내로봇 01 전시장 투입",
+        location: "공학관 1층 로비",
+        target: "GDE-01",
+      },
+    },
+    {
+      // Second unit, same decision — it meets visitors at the car park so
+      // the routing starts before they are inside the campus.
+      t: 33,
+      robot: {
+        id: "GDE-04",
+        buildingId: "parking",
+        task: "방문객 입장 동선 안내",
+        location: "주차장 진입로",
+        status: "안내 중",
+      },
+      log: {
+        category: "robot",
+        stage: "act",
+        severity: "info",
+        title: "안내로봇 04 주차장 입구 배치",
+        location: "주차장 진입로",
+        target: "GDE-04",
+      },
+    },
+    {
+      t: 39,
+      metrics: {
+        "student-center": { crowd: 78 },
+        engineering: { crowd: 84 },
+        main: { crowd: 70 },
+        parking: { crowd: 64 },
+      },
+      action: {
+        id: "act-elevator-exhibition",
+        kind: "elevator",
+        buildingId: "engineering",
+        label: "전시장 전용 엘리베이터",
+        detail: "3·4호기 3층 직통 운행",
+      },
+      signage: {
+        ids: ["SGN-06"],
+        message: {
+          kind: "alert",
+          headline: "전시장 전용 엘리베이터",
+          sub: "3·4호기 3층 직통 · 1·2호기 전층",
+        },
+        reason: "전시장 방문객과 재학생 동선 분리",
+      },
+      log: {
+        category: "crowd",
+        stage: "act",
+        severity: "info",
+        title: "엘리베이터 전시장 직통 운행 적용",
+        location: "공학관",
+        target: "3·4호기 → 3층",
+      },
+    },
+    {
+      t: 45,
+      metrics: {
+        "student-center": { crowd: 76, temperature: 23.4, airQuality: 52 },
+        main: { crowd: 71 },
+        parking: { crowd: 64 },
+      },
+      log: {
+        category: "crowd",
+        stage: "observe",
+        severity: "info",
+        title: "광장 혼잡 완화 — 76%",
+        location: "학생회관 앞 광장",
+      },
+    },
+    {
+      t: 60,
+      metrics: {
+        "student-center": { crowd: 74, temperature: 23.2, airQuality: 49 },
+        engineering: { crowd: 84, energy: 79 },
+        main: { crowd: 71 },
+        parking: { crowd: 63 },
+      },
+      log: {
+        category: "crowd",
+        stage: "observe",
+        severity: "info",
+        title: "방문객 동선이 두 경로로 분산 — 광장 74%",
+        location: "캠퍼스 전체",
+      },
+    },
+  ],
 };
 
 /**

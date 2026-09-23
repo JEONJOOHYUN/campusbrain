@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const TONE = {
   normal: { text: "text-success", border: "hover:border-success/50" },
   crowd: { text: "text-warning", border: "hover:border-warning/50" },
-  event: { text: "text-cyan", border: "" },
+  event: { text: "text-cyan", border: "hover:border-cyan/50" },
   emergency: { text: "text-danger", border: "hover:border-danger/50" },
 } as const;
 

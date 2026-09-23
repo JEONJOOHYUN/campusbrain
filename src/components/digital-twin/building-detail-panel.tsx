@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { SCENARIOS } from "@/data/scenarios";
+import { SCENARIOS, SCENARIO_ORDER } from "@/data/scenarios";
 import { useSimulation } from "@/components/simulation/simulation-provider";
 import { AiInsightBody } from "@/components/dashboard/ai-insight-card";
 import {
@@ -63,9 +63,12 @@ export function BuildingDetailPanel() {
 
   if (!building) return null;
 
-  const crowdScenario = SCENARIOS.crowd;
-  const canSimulateCrowd =
-    crowdScenario.available && crowdScenario.focusBuildingId === building.id;
+  /* Every runnable scenario that is *about* this building can be launched
+     from here. Engineering Hall carries two (crowd and emergency); most
+     buildings carry none, and then the footer is simply absent. */
+  const runnable = SCENARIO_ORDER.map((id) => SCENARIOS[id]).filter(
+    (def) => def.available && def.focusBuildingId === building.id,
+  );
 
   const actions = state.actions.filter((a) => a.buildingId === building.id);
   const insight =
@@ -281,8 +284,8 @@ export function BuildingDetailPanel() {
                 icon={<IconBrain width={15} height={15} />}
                 title="현재 이 건물에 대한 예측 경보가 없습니다"
                 description={
-                  canSimulateCrowd
-                    ? "아래에서 혼잡 시나리오를 실행해 보세요."
+                  runnable.length > 0
+                    ? "아래에서 이 건물의 시나리오를 실행해 보세요."
                     : undefined
                 }
               />
@@ -334,17 +337,21 @@ export function BuildingDetailPanel() {
           )}
         </div>
 
-        {canSimulateCrowd && (
-          <footer className="border-t border-line px-5 py-4">
-            <Button
-              className="w-full"
-              size="lg"
-              onClick={() => runScenario("crowd")}
-            >
-              혼잡 시뮬레이션 실행
-            </Button>
-            <p className="mt-2 text-center text-[11px] text-muted">
-              시뮬레이션 데이터로 혼잡 상황과 AI 대응을 재생합니다.
+        {runnable.length > 0 && (
+          <footer className="space-y-2 border-t border-line px-5 py-4">
+            {runnable.map((def) => (
+              <Button
+                key={def.id}
+                className="w-full"
+                size="lg"
+                variant={def.id === "emergency" ? "secondary" : "primary"}
+                onClick={() => runScenario(def.id)}
+              >
+                {def.label} 시뮬레이션 실행
+              </Button>
+            ))}
+            <p className="pt-1 text-center text-[11px] leading-relaxed text-muted">
+              시뮬레이션 데이터로 상황과 AI 대응을 재생합니다.
             </p>
           </footer>
         )}
